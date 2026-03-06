@@ -4,7 +4,7 @@
 
 クラシックなテキストゲーム **Super Star Trek** を，ブラウザで遊べるGUIアプリとして実装したものです．
 
-🎮 **[Play Now](https://your-username.github.io/your-repo/)**
+🎮 **[Play Now](https://taroyabuki.github.io/super-star-trek/)**
 
 ---
 
@@ -79,7 +79,7 @@ README.md    # このファイル
 
 A browser-based GUI implementation of the classic BASIC game **Super Star Trek**.
 
-🎮 **[Play Now](https://your-username.github.io/your-repo/)**
+🎮 **[Play Now](https://taroyabuki.github.io/super-star-trek/)**
 
 ### About the Game
 
