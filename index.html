@@ -1,0 +1,4018 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Star Trek</title>
+  <style>
+    :root {
+      --bg: #1e1e1e;
+      --bg2: #272727;
+      --bg3: #303030;
+      --green: #00ff88;
+      --green-dim: #006633;
+      --green-dark: #003322;
+      --red: #ff3333;
+      --red-dim: #661111;
+      --yellow: #ffdd00;
+      --yellow-dim: #554400;
+      --cyan: #00ddff;
+      --cyan-dim: #004455;
+      --white: #ccddee;
+      --grid-line: #3a3a3a;
+      --border: #444444;
+      --hero-color: #ffee44;
+      --enemy-color: #ff4444;
+      --base-color: #44ffff;
+      --star-color: #ffffaa;
+      --font: 'Courier New', Courier, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--green);
+      font-family: var(--font);
+      font-size: 16px;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    /* ---- Header ---- */
+    #header {
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      padding: 5px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      max-width: 640px;
+      margin: 0 auto;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    #alert-badge {
+      padding: 3px 12px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      border: 1px solid;
+      transition: all 0.3s;
+    }
+    #alert-badge.GREEN  { color: var(--green);  border-color: var(--green);  background: var(--green-dark); }
+    #alert-badge.YELLOW { color: var(--yellow); border-color: var(--yellow); background: var(--yellow-dim); }
+    #alert-badge.RED    { color: var(--red);    border-color: var(--red);    background: var(--red-dim); animation: blink 0.8s step-end infinite; }
+    #alert-badge.DOCKED { color: var(--cyan);   border-color: var(--cyan);   background: var(--cyan-dim); }
+    @keyframes blink { 50% { opacity: 0.3; } }
+    #stardate-display { color: var(--white); font-size: 14px; }
+    /* ---- Main layout ---- */
+    #main {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      background: var(--grid-line);
+      max-width: 640px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    #scroll-top {
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      overflow-y: overlay; /* overlay scrollbar: doesn't reduce content width (Chrome/Safari/Edge) */
+      flex-shrink: 0;
+      background: var(--grid-line);
+      gap: 1px;
+    }
+    #bottom {
+      background: var(--grid-line);
+      max-width: 640px;
+      margin: 0 auto;
+      width: 100%;
+      flex-shrink: 0;
+    }
+    .panel {
+      background: var(--bg);
+      padding: 8px 10px;
+      overflow: visible;
+    }
+    .panel-title {
+      color: #0a0a0a;
+      background: #00ddff;
+      font-size: 12px;
+      letter-spacing: 2px;
+      margin: -8px -10px 8px;
+      padding: 3px 18px;
+      font-weight: bold;
+    }
+    /* ---- Sector Map ---- */
+    #sector-panel { padding: 6px 8px; }
+    #sector-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      align-items: flex-start;
+    }
+    #sector-grid-wrap { min-width: 0; }
+    #sector-grid-wrap > .dr-title {
+      margin-left: -8px;  /* reach sector-panel's left edge */
+      padding-left: 14px; /* restore text indent: 8px panel + 6px original */
+    }
+    #damage-report > .dr-title {
+      margin-right: -8px;  /* reach sector-panel's right edge */
+      padding-right: 14px; /* restore text indent: 8px panel + 6px original */
+    }
+    #sector-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 3px;
+      background: #555555;
+      border: 2px solid #606060;
+      border-radius: 4px;
+      padding: 4px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .dr-title {
+      color: #0a0a0a;
+      background: #00ddff;
+      font-size: 12px;
+      letter-spacing: 2px;
+      margin-bottom: 5px;
+      padding: 3px 6px;
+      font-weight: bold;
+    }
+    #damage-report {
+      min-width: 0;
+    }
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    #damage-table td {
+      padding: 2px 0;
+      line-height: 1.4;
+    }
+    #damage-table td:first-child {
+      color: #aaaaaa;
+      padding-right: 4px;
+      white-space: nowrap;
+    }
+    #damage-table td.dr-ok   { color: var(--green); }
+    #damage-table td.dr-dmg  { color: var(--red); font-weight: bold; }
+    #mission-summary {
+      margin-top: 6px;
+      font-size: 11px;
+      color: #aaaaaa;
+      line-height: 1.8;
+      border-top: 1px solid var(--border);
+      padding-top: 4px;
+    }
+    #mission-summary span { color: var(--white); font-weight: bold; }
+    #nav-canvas {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      cursor: crosshair;
+      z-index: 200;
+    }
+    #nav-cancel-btn {
+      display: none;
+      position: fixed;
+      z-index: 201;
+      background: var(--bg3);
+      border: 1px solid var(--red);
+      border-radius: 3px;
+      color: var(--red);
+      font-family: var(--font);
+      font-size: 12px;
+      padding: 4px 14px;
+      cursor: pointer;
+      transform: translateX(-50%);
+    }
+    #nav-cancel-btn:hover { background: var(--red-dim); color: #fff; }
+    /* Sector click select mode */
+    #sector-click-banner {
+      display: none;
+      font-size: 11px;
+      color: var(--yellow);
+      letter-spacing: 1px;
+      padding: 3px 0 4px;
+      text-align: center;
+    }
+    #sector-grid.select-mode .sector-cell { cursor: crosshair; }
+    #sector-grid.select-mode .sector-cell:hover { outline: 2px solid var(--yellow); outline-offset: -2px; }
+    .sector-cell.sc-from { outline: 2px solid var(--cyan) !important; outline-offset: -2px; }
+    .sector-cell.sc-to   { outline: 2px solid var(--green) !important; outline-offset: -2px; }
+    #fx-canvas {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      pointer-events: none;
+      z-index: 150;
+    }
+    .sector-cell {
+      aspect-ratio: 1;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #2a2a2a;
+      border: 1px solid #555555;
+      border-radius: 3px;
+      font-size: clamp(12px, 3.5vw, 20px);
+      cursor: default;
+      transition: background 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .sector-cell.hero   { background: #1a1500; border-color: var(--hero-color);  box-shadow: 0 0 7px var(--hero-color); }
+    .sector-cell.enemy  { background: #1a0000; border-color: var(--enemy-color); box-shadow: 0 0 7px var(--enemy-color); animation: enemy-pulse 1.5s ease-in-out infinite; }
+    .sector-cell.base   { background: #002020; border-color: var(--base-color);  box-shadow: 0 0 7px var(--base-color); }
+    .sector-cell.star   { background: #252520; border-color: #3a3a30; }
+    .sector-cell.empty  { background: #2a2a2a; }
+    @keyframes enemy-pulse { 50% { box-shadow: 0 0 14px var(--enemy-color); } }
+    .cell-klabel {
+      position: absolute;
+      bottom: 1px;
+      left: 0; right: 0;
+      text-align: center;
+      font-size: clamp(6px, 1.5vw, 8px);
+      font-family: var(--font);
+      color: #ff9090;
+      line-height: 1;
+      pointer-events: none;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    /* ---- Galaxy Map ---- */
+    #galaxy-panel { }
+    #galaxy-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 2px;
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid #3a3a3a;
+      border-radius: 4px;
+      padding: 2px;
+    }
+    .galaxy-cell {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg2);
+      border: 1px solid #3a3a3a;
+      border-radius: 2px;
+      font-size: 15px;
+      font-family: var(--font);
+      font-weight: bold;
+      letter-spacing: 1px;
+      color: #88ddaa;
+      cursor: default;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .galaxy-cell.current  { border: 1px solid var(--yellow); box-shadow: 0 0 5px var(--yellow); background: #2a2800; }
+    .galaxy-cell.has-enemy { background: #2a1a1a; }
+    .galaxy-cell.has-base  { background: #1a2a2a; }
+    .galaxy-cell.discovered { background: var(--bg3); }
+    .galaxy-cell.unknown { background: #202020; color: #666666; }
+    /* ---- Status Panel ---- */
+    #status-panel { }
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+    }
+    .stat-box {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 4px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0 6px;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: #55cc88;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .stat-value {
+      font-size: 16px;
+      color: var(--green);
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    .stat-value.warn { color: var(--yellow); }
+    .stat-value.danger { color: var(--red); }
+    .stat-bar {
+      height: 4px;
+      background: var(--bg3);
+      border-radius: 2px;
+      margin-top: 4px;
+      overflow: hidden;
+    }
+    .stat-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s, background 0.3s;
+    }
+    .stat-bar-fill.energy { background: var(--green); }
+    .stat-bar-fill.shields { background: var(--cyan); }
+    /* ---- Bottom area ---- */
+    /* (order removed: #bottom is now outside #main) */
+    /* ---- Message Log ---- */
+    #log-panel {
+      flex: 1;
+      min-height: 120px;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      max-width: 640px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    #log-title {
+      color: #0a0a0a;
+      background: #00ddff;
+      font-size: 12px;
+      letter-spacing: 2px;
+      padding: 3px 10px;
+      flex-shrink: 0;
+      font-weight: bold;
+    }
+    #message-log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 10px;
+      min-height: 0;
+      font-size: 13px;
+      font-family: monospace;
+      line-height: 1.6;
+      color: var(--white);
+      white-space: pre;
+    }
+    #message-log::-webkit-scrollbar { width: 10px; }
+    #message-log::-webkit-scrollbar-thumb { background: #446644; border-radius: 5px; }
+    #message-log::-webkit-scrollbar-track { background: #1a1a1a; }
+    .log-line { padding: 0; }
+    .log-line.alert { color: var(--red); font-weight: bold; }
+    .log-line.info  { color: var(--green); }
+    .log-line.system { color: var(--cyan); }
+    .log-line.prompt { color: var(--yellow); }
+    /* ---- Command Panel ---- */
+    #command-panel {
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow-y: auto;
+      min-height: 0;
+    }
+    #command-buttons {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    /* ---- Starfield background ---- */
+    #starfield {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: -1;
+      overflow: hidden;
+    }
+    .bg-star {
+      position: absolute;
+      background: #fff;
+      border-radius: 50%;
+      animation: twinkle var(--dur) ease-in-out infinite;
+    }
+    @keyframes twinkle { 0%,100% { opacity: 0.1; } 50% { opacity: 0.6; } }
+    /* ---- Scrollbars ---- */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    /* Quadrant info tooltip */
+    .galaxy-cell:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      top: 26px; left: 0;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--white);
+      font-size: 11px;
+      padding: 3px 6px;
+      border-radius: 3px;
+      white-space: nowrap;
+      z-index: 9999;
+      pointer-events: none;
+    }
+    .cmd-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--green);
+      font-family: var(--font);
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      padding: 5px 2px;
+    }
+    .cmd-code { font-size: 15px; font-weight: bold; letter-spacing: 1px; }
+    .cmd-ja   { font-size: 11px; color: var(--white); line-height: 1; }
+    .cmd-btn:hover:not(:disabled) .cmd-ja { color: rgba(255,255,255,0.7); }
+    /* ---- Damage badge on cmd buttons ---- */
+    .cmd-dmg {
+      font-size: 10px;
+      color: var(--red);
+      line-height: 1;
+      min-height: 8px;
+    }
+    .cmd-dmg.ok { color: transparent; }
+    @keyframes shield-warn-pulse {
+      0%,100% { border-color: var(--border); box-shadow: none; }
+      50%      { border-color: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+    }
+    .cmd-btn.shield-warn {
+      animation: shield-warn-pulse 0.8s ease-in-out infinite;
+      color: var(--yellow);
+    }
+    .cmd-btn.shield-warn .cmd-ja { color: var(--yellow); opacity: 0.8; }
+    /* ---- Widget area ---- */
+    #widget-area { display: none; flex-direction: column; gap: 5px; min-height: 0; width: 100%; }
+    #yesno-no:hover { background: var(--red-dim) !important; border-color: var(--red) !important; color: #fff !important; }
+    .widget { display: none; flex-direction: column; gap: 0; width: 100%; padding: 4px 0; }
+    .widget.active { display: flex; width: 100%; }
+    /* Slider widget */
+    .slider-display {
+      display: flex; align-items: center; gap: 8px; width: 100%;
+    }
+    .slider-val {
+      color: var(--yellow); font-size: 20px; font-weight: bold;
+      min-width: 50px; text-align: right;
+    }
+    .slider-unit { font-size: 10px; color: var(--green-dim); }
+    input[type=range] {
+      flex: 1; accent-color: var(--green); height: 4px; cursor: pointer;
+    }
+    .quick-btns { display: flex; gap: 4px; margin-top: 12px; margin-bottom: 12px; }
+    .quick-btns .quick-btn:first-child { margin-left: 8px; }
+    .quick-btn {
+      flex: 1; background: var(--bg3); border: 1px solid var(--border);
+      color: var(--cyan); font-family: var(--font); font-size: 10px;
+      padding: 3px 0; border-radius: 3px; cursor: pointer; transition: all 0.12s;
+    }
+    .quick-btn:hover { background: var(--cyan-dim); border-color: var(--cyan); }
+    /* Confirm button */
+    .widget-confirm {
+      background: var(--green-dim); border: 1px solid var(--green);
+      border-radius: 3px; color: var(--green); font-family: var(--font);
+      font-size: 12px; padding: 5px; cursor: pointer; transition: all 0.15s;
+      text-align: center; letter-spacing: 1px;
+    }
+    .widget-confirm:hover { background: var(--green); color: var(--bg); }
+    /* Computer options */
+    .comp-opts {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+      align-items: stretch;
+    }
+    .comp-opt-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--green);
+      font-family: var(--font);
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      padding: 5px 4px;
+      width: 100%;
+    }
+    .comp-opt-btn:hover { background: var(--cyan-dim); border-color: var(--cyan); }
+    .comp-opt-num {
+      color: var(--green);
+      font-size: 15px;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    .comp-opt-btn > span:not(.comp-opt-num) {
+      font-size: 11px;
+      color: var(--white);
+      line-height: 1.3;
+    }
+    .comp-opt-btn:hover > span:not(.comp-opt-num) { color: rgba(255,255,255,0.7); }
+    /* Coordinate input */
+    .coord-row { display: flex; gap: 6px; align-items: center; }
+    .coord-label { font-size: 11px; color: var(--green-dim); }
+    .coord-sel {
+      width: 50px; background: var(--bg3); border: 1px solid var(--green-dim);
+      color: var(--green); font-family: var(--font); font-size: 13px;
+      padding: 4px 6px; border-radius: 3px; outline: none;
+    }
+    /* Cancel button inside widgets */
+    .widget-btn-row { display: flex; gap: 6px; margin-top: 12px; }
+    .widget-btn-row .widget-confirm { margin-left: 8px; }
+    .widget-btn-row .widget-cancel { margin-left: auto; }
+    .widget-cancel {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 3px; color: var(--red); font-family: var(--font);
+      font-size: 12px; padding: 5px 10px; cursor: pointer; transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .widget-cancel:hover { background: var(--red-dim); border-color: var(--red); }
+    /* Text fallback widget */
+    #widget-text-row { display: none; }
+    #lang-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--green);
+      font-family: var(--font);
+      font-size: 11px;
+      padding: 3px 8px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    #lang-btn:hover { border-color: var(--green); }
+  </style>
+</head>
+<body>
+
+<!-- Starfield -->
+<div id="starfield"></div>
+
+<!-- Header -->
+<div id="header">
+  <div id="alert-badge" class="GREEN" data-i18n="alertDefault">● 緑（安全）</div>
+  <div id="stardate-display" data-i18n="stardateInit">宇宙暦: —</div>
+  <div style="flex:1"></div>
+  <div style="color:var(--green-dim);font-size:10px;letter-spacing:1px;"><span data-i18n="shipName">宇宙艦エンタープライズ NCC-1701</span></div>
+  <button id="lang-btn" onclick="localStorage.setItem('lang', currentLang==='ja'?'en':'ja'); location.reload();" title="Switch language">🌐 EN</button>
+</div>
+
+<!-- Main grid -->
+<div id="main">
+
+  <!-- Scrollable top: maps + status + commands -->
+  <div id="scroll-top">
+
+    <!-- Galaxy Map -->
+    <div class="panel" id="galaxy-panel">
+      <div class="panel-title">◈ <span data-i18n="panelGalaxy">銀河マップ</span></div>
+      <div id="galaxy-grid"></div>
+    </div>
+
+    <!-- Sector Map -->
+    <div class="panel" id="sector-panel">
+      <div id="sector-row">
+        <div id="sector-grid-wrap">
+          <div class="dr-title" data-i18n="panelSector">◈ セクターマップ</div>
+          <div id="sector-click-banner">▶ セルをクリックして選択</div>
+          <div id="sector-grid"></div>
+          <canvas id="nav-canvas"></canvas>
+          <canvas id="fx-canvas"></canvas>
+          <button id="nav-cancel-btn" onclick="navHide();submitInput('');" data-i18n="cancelBtn">✕ キャンセル</button>
+        </div>
+        <div id="damage-report">
+          <div class="dr-title" data-i18n="panelSystems">◈ システム状態</div>
+          <table id="damage-table"><tbody id="damage-body"></tbody></table>
+          <div id="mission-summary"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Panel -->
+    <div class="panel" id="status-panel">
+      <div class="panel-title">◈ <span data-i18n="panelStatus">艦船ステータス</span></div>
+      <div class="status-grid">
+      <div class="stat-box">
+        <div class="stat-label" data-i18n="statEnergy">エネルギー</div>
+        <div class="stat-value" id="stat-energy">3000</div>
+        <div class="stat-bar" style="width:100%;flex-basis:100%"><div class="stat-bar-fill energy" id="bar-energy" style="width:100%"></div></div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label" data-i18n="statShields">シールド</div>
+        <div class="stat-value" id="stat-shields">0</div>
+        <div class="stat-bar" style="width:100%;flex-basis:100%"><div class="stat-bar-fill shields" id="bar-shields" style="width:0%"></div></div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label" data-i18n="statTorps">光子魚雷</div>
+        <div class="stat-value" id="stat-torps">10</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label" data-i18n="statEnemies">残敵数</div>
+        <div class="stat-value" id="stat-enemies">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label" data-i18n="statBases">宇宙基地</div>
+        <div class="stat-value" id="stat-bases">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label" data-i18n="statTime">残り時間</div>
+        <div class="stat-value" id="stat-time">—</div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- end scroll-top -->
+
+  <!-- Communication Log: fills remaining window height -->
+  <div id="log-panel">
+    <div id="log-title">◈ <span data-i18n="panelLog">通信ログ</span></div>
+    <div id="message-log"></div>
+  </div>
+
+</div><!-- end main -->
+
+<!-- Command panel: fixed at bottom -->
+<div id="bottom">
+    <div id="command-panel">
+      <div id="command-buttons">
+        <button class="cmd-btn" data-cmd="NAV" title="航法／ワープ" data-i18n-title="ttlNav">
+          <span class="cmd-code">NAV</span><span class="cmd-ja" data-i18n="cmdNav">（航法・ワープ）</span><span class="cmd-dmg ok" id="dmg-NAV"></span>
+        </button>
+        <button class="cmd-btn" data-cmd="SRS" title="近距離スキャン" data-i18n-title="ttlSrs">
+          <span class="cmd-code">SRS</span><span class="cmd-ja" data-i18n="cmdSrs">（近距離スキャン）</span><span class="cmd-dmg ok" id="dmg-SRS"></span>
+        </button>
+        <button class="cmd-btn" data-cmd="LRS" title="長距離スキャン" data-i18n-title="ttlLrs">
+          <span class="cmd-code">LRS</span><span class="cmd-ja" data-i18n="cmdLrs">（長距離スキャン）</span><span class="cmd-dmg ok" id="dmg-LRS"></span>
+        </button>
+        <button class="cmd-btn" data-cmd="PHA" title="フェーザー発射" data-i18n-title="ttlPha">
+          <span class="cmd-code">PHA</span><span class="cmd-ja" data-i18n="cmdPha">（フェーザー）</span><span class="cmd-dmg ok" id="dmg-PHA"></span>
+        </button>
+        <button class="cmd-btn" data-cmd="TOR" title="光子魚雷発射" data-i18n-title="ttlTor">
+          <span class="cmd-code">TOR</span><span class="cmd-ja" data-i18n="cmdTor">（光子魚雷）</span><span class="cmd-dmg ok" id="dmg-TOR"></span>
+        </button>
+        <button class="cmd-btn" data-cmd="SHE" title="シールド制御" data-i18n-title="ttlShe">
+          <span class="cmd-code">SHE</span><span class="cmd-ja" data-i18n="cmdShe">（シールド）</span><span class="cmd-dmg ok" id="dmg-SHE"></span>
+        </button>
+        <button class="cmd-btn" data-cmd="DAM" title="損傷報告" data-i18n-title="ttlDam">
+          <span class="cmd-code">DAM</span><span class="cmd-ja" data-i18n="cmdDam">（損傷報告）</span><span class="cmd-dmg ok" id="dmg-DAM"></span>
+        </button>
+        <button class="cmd-btn" data-cmd="COM" title="ライブラリーコンピュータ" data-i18n-title="ttlCom">
+          <span class="cmd-code">COM</span><span class="cmd-ja" data-i18n="cmdCom">（コンピュータ）</span><span class="cmd-dmg ok" id="dmg-COM"></span>
+        </button>
+        <button class="cmd-btn danger" data-cmd="XXX" title="指揮権返上" data-i18n-title="ttlXxx">
+          <span class="cmd-code">XXX</span><span class="cmd-ja" data-i18n="cmdXxx">（指揮権返上）</span><span class="cmd-dmg ok" id="dmg-XXX"></span>
+        </button>
+      </div>
+
+      <!-- Dynamic widget area -->
+      <div id="widget-area">
+
+        <!-- Warp factor slider -->
+        <div class="widget" id="widget-warp">
+          <div class="slider-display">
+            <span class="slider-unit" data-i18n="warpUnit">ワープ</span>
+            <input type="range" id="warp-slider" min="0.1" max="8" step="0.1" value="1">
+            <span class="slider-val" id="warp-val">1.0</span>
+          </div>
+          <div class="widget-btn-row">
+            <button class="widget-confirm" id="warp-ok" style="flex:1" data-i18n="warpBtn">ワープ開始</button>
+            <button class="widget-cancel" id="warp-cancel" data-i18n="cancelBtn">✕ キャンセル</button>
+          </div>
+        </div>
+
+        <!-- Energy slider (phasers / shields) -->
+        <div class="widget" id="widget-energy">
+          <div class="slider-display">
+            <span class="slider-unit" id="energy-unit">エネルギー</span>
+            <input type="range" id="energy-slider" min="0" max="3000" step="10" value="500">
+            <span class="slider-val" id="energy-val">500</span>
+          </div>
+          <div class="quick-btns">
+            <span style="display:inline-block;width:16px;flex-shrink:0"></span>
+            <button class="quick-btn" id="energy-all" data-i18n="energyAll">全量</button>
+            <button class="quick-btn" id="energy-half" data-i18n="energyHalf">半分</button>
+            <button class="quick-btn" id="energy-zero" data-i18n="energyZero">ゼロ</button>
+          </div>
+          <div style="height:14px"></div>
+          <div class="widget-btn-row">
+            <span style="display:inline-block;width:16px;flex-shrink:0"></span>
+            <button class="widget-confirm" id="energy-ok" style="flex:1" data-i18n="energyOk">決定</button>
+            <button class="widget-cancel" id="energy-cancel" data-i18n="cancelBtn">✕ キャンセル</button>
+          </div>
+        </div>
+
+        <!-- Computer options -->
+        <div class="widget" id="widget-computer">
+          <div class="comp-opts">
+            <button class="comp-opt-btn" data-val="0"><span class="comp-opt-num">0</span> <span data-i18n="comp0">累積銀河記録</span></button>
+            <button class="comp-opt-btn" data-val="1"><span class="comp-opt-num">1</span> <span data-i18n="comp1">状態報告</span></button>
+            <button class="comp-opt-btn" data-val="2"><span class="comp-opt-num">2</span> <span data-i18n="comp2">魚雷データ</span></button>
+            <button class="comp-opt-btn" data-val="3"><span class="comp-opt-num">3</span> <span data-i18n="comp3">基地航法</span></button>
+            <button class="comp-opt-btn" data-val="4"><span class="comp-opt-num">4</span> <span data-i18n="comp4">方向・距離</span></button>
+            <button class="comp-opt-btn" data-val="5"><span class="comp-opt-num">5</span> <span data-i18n="comp5">地域名マップ</span></button>
+            <button class="widget-cancel" id="computer-cancel" style="grid-column:1/-1;margin-top:8px" data-i18n="cancelBtn">✕ キャンセル</button>
+          </div>
+        </div>
+        </div>
+
+        <!-- Yes / No confirmation (DAM repair etc.) -->
+        <div class="widget" id="widget-yesno">
+          <div id="yesno-description" style="font-size:11px;color:var(--white);line-height:1.5;margin-bottom:4px;"></div>
+          <div style="display:flex;gap:6px;">
+            <button class="widget-confirm" id="yesno-yes" style="flex:1;background:var(--green-dim);border-color:var(--green);" data-i18n="yesYes">✔ はい（Y）</button>
+            <button class="widget-confirm" id="yesno-no"  style="flex:1;background:var(--red-dim);border-color:var(--red);color:var(--red);" data-i18n="yesNo">✘ いいえ（N）</button>
+          </div>
+        </div>
+
+        <!-- Coordinate input (Y, X) -->
+        <div class="widget" id="widget-coords">
+          <div class="coord-row">
+            <span class="coord-label" data-i18n="coordY">Y：</span>
+            <select class="coord-sel" id="coord-y">
+              <option>1</option><option>2</option><option>3</option><option>4</option>
+              <option>5</option><option>6</option><option>7</option><option>8</option>
+            </select>
+            <span class="coord-label" data-i18n="coordX">X：</span>
+            <select class="coord-sel" id="coord-x">
+              <option>1</option><option>2</option><option>3</option><option>4</option>
+              <option>5</option><option>6</option><option>7</option><option>8</option>
+            </select>
+          </div>
+          <div class="widget-btn-row">
+            <button class="widget-confirm" id="coords-ok" style="flex:1" data-i18n="coordsOk">決定</button>
+            <button class="widget-cancel" id="coords-cancel" data-i18n="cancelBtn">✕ キャンセル</button>
+          </div>
+        </div>
+
+        <!-- Text fallback -->
+        <div class="widget" id="widget-text">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/*
+ * SUPER STARTREK - MAY 16,1978 - REQUIRES 24K MEMORY
+ *
+ *        **** STAR TREK ****        ****
+ * SIMULATION OF A MISSION OF THE STARSHIP ENTERPRISE,
+ * AS SEEN ON THE STAR TREK TV SHOW.
+ * ORIGIONAL PROGRAM BY MIKE MAYFIELD, MODIFIED VERSION
+ * PUBLISHED IN DEC'S "101 BASIC GAMES", BY DAVE AHL.
+ * MODIFICATIONS TO THE LATTER (PLUS DEBUGGING) BY BOB
+ * LEEDOM - APRIL & DECEMBER 1974,
+ * WITH A LITTLE HELP FROM HIS FRIENDS . . .
+ * COMMENTS, EPITHETS, AND SUGGESTIONS SOLICITED --
+ * SEND TO:  R. C. LEEDOM
+ *           WESTINGHOUSE DEFENSE & ELECTRONICS SYSTEMS CNTR.
+ *           BOX 746, M.S. 338
+ *           BALTIMORE, MD  21203
+ *
+ * CONVERTED TO MICROSOFT 8 K BASIC 3/16/78 BY JOHN GORDERS
+ * LINE NUMBERS FROM VERSION STREK7 OF 1/12/75 PRESERVED AS
+ * MUCH AS POSSIBLE WHILE USING MULTIPLE STATEMENTS PER LINE
+ * SOME LINES ARE LONGER THAN 72 CHARACTERS; THIS WAS DONE
+ * BY USING "?" INSTEAD OF "PRINT" WHEN ENTERING LINES
+ *
+ * Translated and reworked into JavaScript in February 2021
+ * by Les Orchard <me@lmorchard.com>
+ */
+
+const setGameOptions = (options = {}) =>
+  Object.assign(gameOptions, options);
+const getGameState = () => ({ ...gameState });
+const onPrint = (fn) => (print = fn);
+const onInput = (fn) => (input = fn);
+const onExit = (fn) => (exit = fn);
+
+async function gameMain() {
+  await gameReset();
+  await gameLoop();
+  await exit();
+}
+
+let gameState = {};
+let print = () => {};
+let input = () => {};
+let exit = () => {};
+
+const gameOptions = {
+  stardateStart: Math.floor(Math.random() * 20 + 20) * 100,
+  timeLimit: 25 + Math.floor(Math.random() * 10),
+  energyMax: 3000,
+  photonTorpedoesMax: 10,
+  starbaseSpawnChance: 0.96,
+  enemyMaxShield: 200,
+  enemySpawnChance: [0.8, 0.85, 0.98],
+  maxStarsPerSector: 8,
+  sectorWidth: 8,
+  sectorHeight: 8,
+  galaxyWidth: 8,
+  galaxyHeight: 8,
+  systemDamageChanceOnHit: 0.6,
+  systemDamageHitThroughShields: 0.02,
+  systemChanceAffectedInWarp: 0.2,
+  systemChanceDamageInWarp: 0.6,
+  nameEnemy: "KLINGON",
+  nameEnemies: "KLINGONS",
+  nameScienceOfficer: "SPOCK",
+  nameNavigationOfficer: "LT. SULU",
+  nameWeaponsOfficer: "ENSIGN CHEKOV",
+  nameCommunicationsOfficer: "LT. UHURA",
+  nameChiefEngineer: "SCOTT",
+  sectorMapSymbols: {
+    empty: "   ",
+    star: " * ",
+    base: ">!<",
+    hero: "<*>",
+    enemy: "+K+",
+  },
+  shipSystems: [
+    "WARP ENGINES",
+    "SHORT RANGE SENSORS",
+    "LONG RANGE SENSORS",
+    "PHASER CONTROL",
+    "PHOTON TUBES",
+    "DAMAGE CONTROL",
+    "SHIELD CONTROL",
+    "LIBRARY-COMPUTER",
+  ],
+  quadrantNames: [
+    [
+      "ANTARES",
+      "RIGEL",
+      "PROCYON",
+      "VEGA",
+      "CANOPUS",
+      "ALTAIR",
+      "SAGITTARIUS",
+      "POLLUX",
+    ],
+    [
+      "SIRIUS",
+      "DENEB",
+      "CAPELLA",
+      "BETELGEUSE",
+      "ALDEBARAN",
+      "REGULUS",
+      "ARCTURUS",
+      "SPICA",
+    ],
+  ],
+  quadrantNumbers: ["I", "II", "III", "IV"],
+};
+
+let SYSTEM_WARP_ENGINES,
+  SYSTEM_SHORT_RANGE_SENSORS,
+  SYSTEM_LONG_RANGE_SENSORS,
+  SYSTEM_PHASER_CONTROL,
+  SYSTEM_PHOTON_TUBES,
+  SYSTEM_DAMAGE_CONTROL,
+  SYSTEM_SHIELD_CONTROL,
+  SYSTEM_LIBRARY_COMPUTER;
+
+async function gameIntro() {
+  print("\n".repeat(10));
+  print("                                    ,------*------,");
+  print("                    ,-------------   '---  ------'");
+  print("                     '-------- --'      / /");
+  print("                         ,---' '-------/ /--,");
+  print("                          '----------------'");
+  print("");
+  print("                    THE USS ENTERPRISE --- NCC-1701");
+  print("\n".repeat(4));
+
+  print("YOUR ORDERS ARE AS FOLLOWS:");
+  print();
+  print(
+    `  DESTROY THE ${gameState.enemiesRemaining} ${gameOptions.nameEnemy} WARSHIPS WHICH HAVE INVADED`
+  );
+  print("  THE GALAXY BEFORE THEY CAN ATTACK FEDERATION HEADQUARTERS");
+  print(
+    `  ON STARDATE ${formatStardate(
+      gameOptions.stardateStart + gameOptions.timeLimit
+    )} THIS GIVES YOU ${gameOptions.timeLimit} DAYS.  THERE${
+      gameState.starbasesRemaining > 1 ? " ARE " : " IS "
+    }`
+  );
+  print(
+    `  ${gameState.starbasesRemaining} STARBASE${
+      gameState.starbasesRemaining > 1 ? "S" : " ARE"
+    } IN THE GALAXY FOR RESUPPLYING YOUR SHIP`
+  );
+}
+
+async function gameReset() {
+  [
+    SYSTEM_WARP_ENGINES,
+    SYSTEM_SHORT_RANGE_SENSORS,
+    SYSTEM_LONG_RANGE_SENSORS,
+    SYSTEM_PHASER_CONTROL,
+    SYSTEM_PHOTON_TUBES,
+    SYSTEM_DAMAGE_CONTROL,
+    SYSTEM_SHIELD_CONTROL,
+    SYSTEM_LIBRARY_COMPUTER,
+  ] = gameOptions.shipSystems;
+
+  gameState = {
+    gameOver: false,
+    gameWon: false,
+    gameQuit: false,
+    destroyed: false,
+    shouldRestart: false,
+    sectorMap: "",
+    alertCondition: "",
+    stardateCurrent: gameOptions.stardateStart,
+    isDocked: false,
+    energyRemaining: gameOptions.energyMax,
+    photonTorpedoesRemaining: gameOptions.photonTorpedoesMax,
+    shieldsCurrent: 0,
+    starbasesRemaining: 0,
+    enemiesRemaining: 0,
+    quadrantPositionY: randomInt(gameOptions.galaxyHeight, 1),
+    quadrantPositionX: randomInt(gameOptions.galaxyWidth, 1),
+    sectorPositionY: randomInt(gameOptions.sectorHeight, 1),
+    sectorPositionX: randomInt(gameOptions.sectorWidth, 1),
+    sectorEnemiesCount: 0,
+    sectorStarbasesCount: 0,
+    sectorStarsCount: 0,
+    galacticMap: [],
+    galacticMapDiscovered: [],
+  };
+
+  gameState.systemsDamage = {};
+  for (const systemName of gameOptions.shipSystems) {
+    gameState.systemsDamage[systemName] = 0;
+  }
+
+  for (let mapY = 1; mapY <= gameOptions.galaxyHeight; mapY++) {
+    gameState.galacticMap[mapY] = [];
+    gameState.galacticMapDiscovered[mapY] = [];
+    for (let mapX = 1; mapX <= gameOptions.galaxyWidth; mapX++) {
+      gameState.galacticMapDiscovered[mapY][mapX] = 0;
+
+      gameState.sectorEnemiesCount = 0;
+
+      const enemySpawnRoll = Math.random();
+      if (enemySpawnRoll > gameOptions.enemySpawnChance[2]) {
+        gameState.sectorEnemiesCount = 3;
+        gameState.enemiesRemaining = gameState.enemiesRemaining + 3;
+      } else if (enemySpawnRoll > gameOptions.enemySpawnChance[1]) {
+        gameState.sectorEnemiesCount = 2;
+        gameState.enemiesRemaining = gameState.enemiesRemaining + 2;
+      } else if (enemySpawnRoll > gameOptions.enemySpawnChance[0]) {
+        gameState.sectorEnemiesCount = 1;
+        gameState.enemiesRemaining = gameState.enemiesRemaining + 1;
+      }
+
+      gameState.sectorStarbasesCount = 0;
+      if (Math.random() > gameOptions.starbaseSpawnChance) {
+        gameState.sectorStarbasesCount = 1;
+        gameState.starbasesRemaining = gameState.starbasesRemaining + 1;
+      }
+
+      // 1040
+      gameState.galacticMap[mapY][mapX] =
+        gameState.sectorEnemiesCount * 100 +
+        gameState.sectorStarbasesCount * 10 +
+        randomInt(gameOptions.maxStarsPerSector, 1);
+    }
+  }
+
+  if (gameState.enemiesRemaining > gameOptions.timeLimit) {
+    // Ensure the player has at least one more stardate than the number of enemies
+    gameOptions.timeLimit = gameState.enemiesRemaining + 1;
+  }
+
+  if (gameState.starbasesRemaining === 0) {
+    if (
+      gameState.galacticMap[gameState.quadrantPositionY][
+        gameState.quadrantPositionX
+      ] < 200
+    ) {
+      gameState.galacticMap[gameState.quadrantPositionY][
+        gameState.quadrantPositionX
+      ] =
+        gameState.galacticMap[gameState.quadrantPositionY][
+          gameState.quadrantPositionX
+        ] + 120;
+    }
+    gameState.enemiesRemaining = gameState.enemiesRemaining + 1;
+    gameState.starbasesRemaining = 1;
+    gameState.galacticMap[gameState.quadrantPositionY][
+      gameState.quadrantPositionX
+    ] =
+      gameState.galacticMap[gameState.quadrantPositionY][
+        gameState.quadrantPositionX
+      ] + 10;
+    gameState.quadrantPositionY = randomInt(gameOptions.galaxyHeight, 1);
+    gameState.quadrantPositionX = randomInt(gameOptions.galaxyWidth, 1);
+  }
+
+  gameState.enemiesInitialCount = gameState.enemiesRemaining;
+
+  await gameIntro();
+  await newQuadrantEntered();
+}
+
+async function newQuadrantEntered() {
+  gameState.sectorEnemiesCount = 0;
+  gameState.sectorStarbasesCount = 0;
+  gameState.sectorStarsCount = 0;
+  gameState.starbaseRepairDelay = 0.5 * Math.random();
+
+  // Add this sector to the known map
+  gameState.galacticMapDiscovered[gameState.quadrantPositionY][
+    gameState.quadrantPositionX
+  ] =
+    gameState.galacticMap[gameState.quadrantPositionY][
+      gameState.quadrantPositionX
+    ];
+
+  // Initialize a sector enemy for each that had a chance to spawn
+  gameState.sectorEnemies = gameOptions.enemySpawnChance.map((c) => ({
+    health: 0,
+    posY: 0,
+    posX: 0,
+  }));
+
+  if (
+    gameState.quadrantPositionY >= 1 &&
+    gameState.quadrantPositionY <= gameOptions.galaxyHeight &&
+    gameState.quadrantPositionX >= 1 &&
+    gameState.quadrantPositionX <= gameOptions.galaxyWidth
+  ) {
+    let currentQuadrantName = buildQuadrantName(
+      gameState.quadrantPositionY,
+      gameState.quadrantPositionX
+    );
+    print();
+    if (gameOptions.stardateStart == gameState.stardateCurrent) {
+      print("YOUR MISSION BEGINS WITH YOUR STARSHIP LOCATED");
+      print(`IN THE GALACTIC QUADRANT, '${currentQuadrantName}'.`);
+    } else {
+      print(`NOW ENTERING ${currentQuadrantName} QUADRANT . . .`);
+    }
+    print();
+    gameState.sectorEnemiesCount = Math.floor(
+      gameState.galacticMap[gameState.quadrantPositionY][
+        gameState.quadrantPositionX
+      ] * 0.01
+    );
+    gameState.sectorStarbasesCount =
+      Math.floor(
+        gameState.galacticMap[gameState.quadrantPositionY][
+          gameState.quadrantPositionX
+        ] * 0.1
+      ) -
+      10 * gameState.sectorEnemiesCount;
+    gameState.sectorStarsCount =
+      gameState.galacticMap[gameState.quadrantPositionY][
+        gameState.quadrantPositionX
+      ] -
+      100 * gameState.sectorEnemiesCount -
+      10 * gameState.sectorStarbasesCount;
+
+    if (gameState.sectorEnemiesCount != 0) {
+      print("COMBAT AREA      CONDITION RED");
+      if (gameState.shieldsCurrent <= 200) {
+        print("   SHIELDS DANGEROUSLY LOW");
+      }
+    }
+
+    for (
+      let enemyIdx = 0;
+      enemyIdx < gameOptions.enemySpawnChance.length;
+      enemyIdx++
+    ) {
+      gameState.sectorEnemies[enemyIdx].posY = 0;
+      gameState.sectorEnemies[enemyIdx].posX = 0;
+    }
+  }
+
+  for (
+    let enemyIdx = 0;
+    enemyIdx < gameOptions.enemySpawnChance.length;
+    enemyIdx++
+  ) {
+    gameState.sectorEnemies[enemyIdx].health = 0;
+  }
+
+  gameState.sectorMap = " ".repeat(
+    gameOptions.sectorMapSymbols.empty.length *
+      gameOptions.sectorHeight *
+      gameOptions.sectorWidth
+  );
+
+  insertInSectorMap(
+    gameOptions.sectorMapSymbols.hero,
+    gameState.sectorPositionY,
+    gameState.sectorPositionX
+  );
+
+  if (gameState.sectorEnemiesCount >= 1) {
+    // 1720
+    for (
+      let enemyIdx = 0;
+      enemyIdx < gameState.sectorEnemiesCount;
+      enemyIdx++
+    ) {
+      const [posY, posX] = findSpaceInSectorMap();
+      insertInSectorMap(gameOptions.sectorMapSymbols.enemy, posY, posX);
+      gameState.sectorEnemies[enemyIdx] = {
+        posY,
+        posX,
+        health: gameOptions.enemyMaxShield * (0.5 + Math.random()),
+      };
+    }
+  }
+
+  if (gameState.sectorStarbasesCount >= 1) {
+    const [R1, R2] = findSpaceInSectorMap();
+    gameState.sectorStarbaseY = R1;
+    gameState.sectorStarbaseX = R2;
+    insertInSectorMap(gameOptions.sectorMapSymbols.base, R1, R2);
+  }
+
+  for (let i = 1; i <= gameState.sectorStarsCount; i++) {
+    insertInSectorMap(
+      gameOptions.sectorMapSymbols.star,
+      ...findSpaceInSectorMap()
+    );
+  }
+
+  return shortRangeSensorScanAndStartup();
+}
+
+async function gameLoop() {
+  while (!gameState.gameOver) {
+    await acceptCommand();
+    if (gameState.gameOver) {
+      await endOfGame();
+    }
+    if (gameState.shouldRestart) {
+      await gameReset();
+    }
+  }
+}
+
+async function acceptCommand() {
+  if (
+    gameState.shieldsCurrent + gameState.energyRemaining <= 10 ||
+    (gameState.energyRemaining < 10 &&
+      gameState.systemsDamage[SYSTEM_SHIELD_CONTROL] != 0)
+  ) {
+    print();
+    print("** FATAL ERROR **   YOU'VE JUST STRANDED YOUR SHIP IN SPACE");
+    print("YOU HAVE INSUFFICIENT MANEUVERING ENERGY, AND SHIELD CONTROL");
+    print("IS PRESENTLY INCAPABLE OF CROSS-CIRCUITING TO ENGINE ROOM!!");
+    print();
+    gameState.gameOver = true;
+    return;
+  }
+
+  const commandInput = (await input("COMMAND")).trim().toUpperCase();
+  const command = COMMANDS[commandInput] || commandHelp;
+  await command();
+}
+
+/************************************************************************/
+
+const COMMANDS = {
+  NAV: commandCourseControl,
+  SRS: shortRangeSensorScanAndStartup,
+  LRS: commandLongRangeScan,
+  PHA: commandPhaserControl,
+  TOR: commandPhotonTorpedo,
+  SHE: commandShieldControl,
+  DAM: commandDamageControl,
+  COM: commandLibraryComputer,
+  XXX: () => {
+    // todo more confirmation here?
+    gameState.gameOver = true;
+    gameState.gameQuit = true;
+  },
+  DUMP: () => {
+    console.log(JSON.stringify(gameState));
+  },
+};
+
+async function commandHelp() {
+  print("ENTER ONE OF THE FOLLOWING:");
+  print("  NAV  (TO SET COURSE)");
+  print("  SRS  (FOR SHORT RANGE SENSOR SCAN)");
+  print("  LRS  (FOR LONG RANGE SENSOR SCAN)");
+  print("  PHA  (TO FIRE PHASERS)");
+  print("  TOR  (TO FIRE PHOTON TORPEDOES)");
+  print("  SHE  (TO RAISE OR LOWER SHIELDS)");
+  print("  DAM  (FOR DAMAGE CONTROL REPORTS)");
+  print("  COM  (TO CALL ON LIBRARY-COMPUTER)");
+  print("  XXX  (TO RESIGN YOUR COMMAND)");
+  print();
+}
+
+async function shortRangeSensorScanAndStartup() {
+  checkIfDocked();
+
+  if (gameState.isDocked) {
+    gameState.alertCondition = "DOCKED";
+    gameState.energyRemaining = gameOptions.energyMax;
+    gameState.photonTorpedoesRemaining = gameOptions.photonTorpedoesMax;
+    print("SHIELDS DROPPED FOR DOCKING PURPOSES");
+    gameState.shieldsCurrent = 0;
+  } else {
+    gameState.alertCondition = "GREEN";
+    if (gameState.energyRemaining < gameOptions.energyMax * 0.1)
+      gameState.alertCondition = "YELLOW";
+    if (gameState.sectorEnemiesCount > 0) gameState.alertCondition = "RED";
+  }
+
+  if (gameState.systemsDamage[SYSTEM_SHORT_RANGE_SENSORS] < 0) {
+    print();
+    print("*** SHORT RANGE SENSORS ARE OUT ***");
+    print();
+    return;
+  }
+
+  const statusLines = [
+    `STARDATE           ${formatStardate(gameState.stardateCurrent)}`,
+    `CONDITION          ${gameState.alertCondition}`,
+    `QUADRANT           ${gameState.quadrantPositionY} , ${gameState.quadrantPositionX}`,
+    `SECTOR             ${gameState.sectorPositionY} , ${gameState.sectorPositionX}`,
+    `PHOTON TORPEDOES   ${gameState.photonTorpedoesRemaining}`,
+    `TOTAL ENERGY       ${
+      gameState.energyRemaining + gameState.shieldsCurrent
+    }`,
+    `SHIELDS            ${gameState.shieldsCurrent}`,
+    `KLINGONS REMAINING ${gameState.enemiesRemaining}`,
+  ];
+
+  const lineSplit = new RegExp(
+    `.{${gameOptions.sectorMapSymbols.empty.length * gameOptions.sectorWidth}}`,
+    "g"
+  );
+  const cellSplit = new RegExp(
+    `.{${gameOptions.sectorMapSymbols.empty.length}}`,
+    "g"
+  );
+  const borderLine = "-".repeat(
+    (gameOptions.sectorMapSymbols.empty.length + 1) * gameOptions.sectorWidth
+  );
+  print(borderLine);
+  print(
+    gameState.sectorMap
+      // Split the map into lines of 24 chars
+      .match(lineSplit)
+      // Split each line into cells of 3 chars
+      .map((line) => line.match(cellSplit))
+      // Format each line with Y coord, spaced out cells, and a line of status
+      .map((line, idx) => line.join(" ") + " ".repeat(4) + statusLines[idx])
+      // Finally, join all the lines with returns
+      .join("\n")
+  );
+  print(borderLine);
+  print();
+}
+
+function checkIfDocked() {
+  const { sectorPositionY: sY, sectorPositionX: sX } = gameState;
+  for (let posY = sY - 1; posY <= sY + 1; posY++) {
+    for (let posX = sX - 1; posX <= sX + 1; posX++) {
+      if (
+        posY >= 1 ||
+        posY <= gameOptions.sectorHeight ||
+        posX >= 1 ||
+        posX <= gameOptions.sectorWidth
+      ) {
+        if (findInsectorMap(gameOptions.sectorMapSymbols.base, posY, posX)) {
+          gameState.isDocked = true;
+          return;
+        }
+      }
+    }
+  }
+  gameState.isDocked = false;
+}
+
+async function commandCourseControl() {
+  let courseInput = parseFloat(await input("COURSE (0-9)"));
+  if (courseInput == 9) courseInput = 1;
+  if (isNaN(courseInput) || courseInput < 1 || courseInput > 9) {
+    print(
+      `   ${gameOptions.nameNavigationOfficer} REPORTS, 'INCORRECT COURSE DATA, SIR!'`
+    );
+    return;
+  }
+
+  const warpFactorInput = parseFloat(
+    await input(
+      `WARP FACTOR (0-${
+        gameState.systemsDamage[SYSTEM_WARP_ENGINES] < 0 ? "0.2" : "8"
+      })`
+    )
+  );
+  if (warpFactorInput == 0 || isNaN(warpFactorInput)) return;
+  if (
+    gameState.systemsDamage[SYSTEM_WARP_ENGINES] < 0 &&
+    warpFactorInput > 0.2
+  ) {
+    return print("WARP ENGINES ARE DAMAGED.  MAXIMUM SPEED = WARP 0.2");
+  }
+  if (warpFactorInput < 0 && warpFactorInput > 8) {
+    return print(
+      `   CHIEF ENGINEER ${gameOptions.nameChiefEngineer} REPORTS 'THE ENGINES WON'T TAKE WARP ${warpFactorInput}!'`
+    );
+  }
+
+  // FIXME: This seems to depend on square sectors - which we have, but could be changed in config
+  const sectorsToWarp = Math.floor(warpFactorInput * gameOptions.sectorWidth + 0.5);
+
+  if (gameState.energyRemaining - sectorsToWarp < 0) {
+    print("ENGINEERING REPORTS   'INSUFFICIENT ENERGY AVAILABLE");
+    print(
+      "                       FOR MANEUVERING AT WARP ",
+      warpFactorInput,
+      " !'"
+    );
+    if (
+      gameState.shieldsCurrent > sectorsToWarp - gameState.energyRemaining &&
+      gameState.systemsDamage[SYSTEM_SHIELD_CONTROL] > 0
+    ) {
+      print(
+        "DEFLECTOR CONTROL ROOM ACKNOWLEDGES ",
+        gameState.shieldsCurrent,
+        " UNITS OF ENERGY"
+      );
+      print("                         PRESENTLY DEPLOYED TO SHIELDS.");
+    }
+  }
+
+  for (
+    let enemyIdx = 0;
+    enemyIdx < gameOptions.enemySpawnChance.length;
+    enemyIdx++
+  ) {
+    if (gameState.sectorEnemies[enemyIdx].health > 0) {
+      insertInSectorMap(
+        gameOptions.sectorMapSymbols.empty,
+        gameState.sectorEnemies[enemyIdx].posY,
+        gameState.sectorEnemies[enemyIdx].posX
+      );
+      const [rY, rX] = findSpaceInSectorMap();
+      gameState.sectorEnemies[enemyIdx].posY = rY;
+      gameState.sectorEnemies[enemyIdx].posX = rX;
+      insertInSectorMap(
+        gameOptions.sectorMapSymbols.enemy,
+        gameState.sectorEnemies[enemyIdx].posY,
+        gameState.sectorEnemies[enemyIdx].posX
+      );
+    }
+  }
+
+  enemiesShoot();
+
+  let damageControlHeaderPrinted = false;
+  const printDamageReport = (msg) => {
+    if (!damageControlHeaderPrinted) {
+      damageControlHeaderPrinted = true;
+      print("DAMAGE CONTROL REPORT:");
+    }
+    print(msg);
+  };
+
+  let repairFactorDuringWarp = Math.min(1, warpFactorInput);
+
+  // Continually repair damaged systems during warp
+  for (const systemName of gameOptions.shipSystems) {
+    if (gameState.systemsDamage[systemName] >= 0) continue;
+
+    gameState.systemsDamage[systemName] =
+      gameState.systemsDamage[systemName] + repairFactorDuringWarp;
+
+    if (
+      gameState.systemsDamage[systemName] > -0.1 &&
+      gameState.systemsDamage[systemName] < 0
+    ) {
+      gameState.systemsDamage[systemName] = -0.1;
+      continue;
+    }
+
+    if (gameState.systemsDamage[systemName] < 0) continue;
+
+    printDamageReport(`        ${systemName} REPAIR COMPLETED.`);
+  }
+
+  // 20% chance of a random system being damaged, repaired, or improved in warp
+  if (Math.random() < gameOptions.systemChanceAffectedInWarp) {
+    const systemIdx = randomInt(gameOptions.shipSystems.length);
+    const systemName = gameOptions.shipSystems[systemIdx];
+
+    if (Math.random() < gameOptions.systemChanceDamageInWarp) {
+      // 60% chance of random system damage
+      gameState.systemsDamage[systemName] =
+        gameState.systemsDamage[systemName] - (Math.random() * 5 + 1);
+      printDamageReport(`        ${systemName} DAMAGED`);
+    } else {
+      // 40% chance of random system repair or improvement
+      gameState.systemsDamage[systemName] =
+        gameState.systemsDamage[systemName] + Math.random() * 3 + 1;
+      printDamageReport(`        ${systemName} STATE OF REPAIR IMPROVED`);
+    }
+    print();
+  }
+
+  // 3060 REM BEGIN MOVING STARSHIP
+  insertInSectorMap(
+    gameOptions.sectorMapSymbols.empty,
+    Math.floor(gameState.sectorPositionY),
+    Math.floor(gameState.sectorPositionX)
+  );
+
+  const [courseDeltaY, courseDeltaX] = courseToDeltaXY(courseInput);
+  let currentSectorPositionY = gameState.sectorPositionY;
+  let currentSectorPositionX = gameState.sectorPositionX;
+  let currentQuadrantPosY = gameState.quadrantPositionY;
+  let currentQuadrantPosX = gameState.quadrantPositionX;
+
+  for (let sectorsWarped = 1; sectorsWarped < sectorsToWarp; sectorsWarped++) {
+    gameState.sectorPositionY = gameState.sectorPositionY + courseDeltaY;
+    gameState.sectorPositionX = gameState.sectorPositionX + courseDeltaX;
+
+    if (
+      gameState.sectorPositionY < 1 ||
+      gameState.sectorPositionY >= 9 ||
+      gameState.sectorPositionX < 1 ||
+      gameState.sectorPositionX >= 9
+    ) {
+      // 3490 REM EXCEEDED QUADRANT LIMITS
+      currentSectorPositionY =
+        gameOptions.sectorHeight * gameState.quadrantPositionY +
+        currentSectorPositionY +
+        sectorsToWarp * courseDeltaY;
+
+      currentSectorPositionX =
+        gameOptions.sectorWidth * gameState.quadrantPositionX +
+        currentSectorPositionX +
+        sectorsToWarp * courseDeltaX;
+
+      gameState.quadrantPositionY = Math.floor(currentSectorPositionY / 8);
+      gameState.quadrantPositionX = Math.floor(currentSectorPositionX / 8);
+
+      gameState.sectorPositionY = Math.floor(
+        currentSectorPositionY - gameState.quadrantPositionY * 8
+      );
+      gameState.sectorPositionX = Math.floor(
+        currentSectorPositionX - gameState.quadrantPositionX * 8
+      );
+
+      if (gameState.sectorPositionY == 0) {
+        gameState.quadrantPositionY = gameState.quadrantPositionY - 1;
+        gameState.sectorPositionY = 8;
+      }
+      if (gameState.sectorPositionX == 0) {
+        gameState.quadrantPositionX = gameState.quadrantPositionX - 1;
+        gameState.sectorPositionX = 8;
+      }
+
+      let galacticPerimeterHit = false;
+      if (gameState.quadrantPositionY < 1) {
+        galacticPerimeterHit = true;
+        gameState.quadrantPositionY = 1;
+        gameState.sectorPositionY = 1;
+      }
+      if (gameState.quadrantPositionY > 8) {
+        galacticPerimeterHit = true;
+        gameState.quadrantPositionY = 8;
+        gameState.sectorPositionY = 8;
+      }
+      if (gameState.quadrantPositionX < 1) {
+        galacticPerimeterHit = true;
+        gameState.quadrantPositionX = 1;
+        gameState.sectorPositionX = 1;
+      }
+      if (gameState.quadrantPositionX > 8) {
+        galacticPerimeterHit = true;
+        gameState.quadrantPositionX = 8;
+        gameState.sectorPositionX = 8;
+      }
+
+      if (galacticPerimeterHit) {
+        print(
+          `${gameOptions.nameCommunicationsOfficer} REPORTS MESSAGE FROM STARFLEET COMMAND:`
+        );
+        print("  'PERMISSION TO ATTEMPT CROSSING OF GALACTIC PERIMETER");
+        print("  IS HEREBY *DENIED*.  SHUT DOWN YOUR ENGINES.'");
+        print(
+          `CHIEF ENGINEER ${gameOptions.nameChiefEngineer} REPORTS  'WARP ENGINES SHUT DOWN`
+        );
+        print(
+          `  AT SECTOR ${gameState.sectorPositionY} , ${gameState.sectorPositionX} OF QUADRANT ${gameState.quadrantPositionY} , ${gameState.quadrantPositionX}.'`
+        );
+
+        if (checkIfTimeExpired()) {
+          return;
+        }
+      }
+
+      if (
+        gameOptions.sectorHeight * gameState.quadrantPositionY + gameState.quadrantPositionX ==
+        gameOptions.sectorHeight * currentQuadrantPosY + currentQuadrantPosX
+      ) {
+        break;
+      }
+
+      gameState.stardateCurrent = gameState.stardateCurrent + 1;
+      consumeEnergyForWarp(sectorsToWarp);
+      return newQuadrantEntered();
+    }
+
+    if (
+      !findInsectorMap(
+        gameOptions.sectorMapSymbols.empty,
+        gameState.sectorPositionY,
+        gameState.sectorPositionX
+      )
+    ) {
+      // Undo this step of warp travel if the space isn't empty
+      gameState.sectorPositionY = Math.floor(
+        gameState.sectorPositionY - courseDeltaY
+      );
+      gameState.sectorPositionX = Math.floor(
+        gameState.sectorPositionX - courseDeltaX
+      );
+      print(
+        `WARP ENGINES SHUT DOWN AT SECTOR ${gameState.sectorPositionY} , ${gameState.sectorPositionX} DUE TO BAD NAVAGATION`
+      );
+      break;
+    }
+  }
+
+  gameState.sectorPositionY = Math.floor(gameState.sectorPositionY);
+  gameState.sectorPositionX = Math.floor(gameState.sectorPositionX);
+
+  insertInSectorMap(
+    gameOptions.sectorMapSymbols.hero,
+    Math.floor(gameState.sectorPositionY),
+    Math.floor(gameState.sectorPositionX)
+  );
+
+  consumeEnergyForWarp(sectorsToWarp);
+
+  let timeElapsedDuringWarp = 1;
+  if (warpFactorInput < 1) {
+    timeElapsedDuringWarp = 0.1 * Math.floor(10 * warpFactorInput);
+  }
+
+  gameState.stardateCurrent = gameState.stardateCurrent + timeElapsedDuringWarp;
+  if (checkIfTimeExpired()) {
+    return;
+  }
+
+  await shortRangeSensorScanAndStartup();
+}
+
+function checkIfTimeExpired() {
+  if (
+    gameState.stardateCurrent >
+    gameOptions.stardateStart + gameOptions.timeLimit
+  ) {
+    gameState.gameOver = true;
+  }
+  return gameState.gameOver;
+}
+
+function consumeEnergyForWarp(sectorsToWarp) {
+  // 3900 REM MANEUVER ENERGY S/R **
+  gameState.energyRemaining = gameState.energyRemaining - sectorsToWarp - 10;
+  if (gameState.energyRemaining >= 0) {
+    return;
+  }
+
+  print("SHIELD CONTROL SUPPLIES ENERGY TO COMPLETE THE MANEUVER.");
+  gameState.shieldsCurrent =
+    gameState.shieldsCurrent + gameState.energyRemaining;
+  gameState.energyRemaining = 0;
+  if (gameState.shieldsCurrent <= 0) {
+    gameState.shieldsCurrent = 0;
+  }
+}
+
+async function commandLongRangeScan() {
+  // 3990 REM LONG RANGE SENSOR SCAN CODE
+  if (gameState.systemsDamage[SYSTEM_LONG_RANGE_SENSORS] < 0) {
+    print("LONG RANGE SENSORS ARE INOPERABLE");
+    return;
+  }
+
+  print(
+    "LONG RANGE SCAN FOR QUADRANT ",
+    gameState.quadrantPositionY,
+    " , ",
+    gameState.quadrantPositionX
+  );
+
+  const separatorLine = "-------------------";
+  print(separatorLine);
+
+  for (
+    let posY = gameState.quadrantPositionY - 1;
+    posY <= gameState.quadrantPositionY + 1;
+    posY++
+  ) {
+    // Scan a line of sectors
+    const lineSectors = [null, null, null];
+    for (
+      let posX = gameState.quadrantPositionX - 1;
+      posX <= gameState.quadrantPositionX + 1;
+      posX++
+    ) {
+      if (posY > 0 && posY < 9 && posX > 0 && posX < 9) {
+        // Add the scanned cell to the current scan output
+        lineSectors[posX - gameState.quadrantPositionX + 1] =
+          gameState.galacticMap[posY][posX];
+        // Add the scanned cell to the discovered map
+        gameState.galacticMapDiscovered[posY][posX] =
+          gameState.galacticMap[posY][posX];
+      }
+    }
+
+    // Print a formatted line of the scan - e.g. ": 004 : 205 : 004 :"
+    print(
+      ": " +
+        lineSectors
+          .map((sector) =>
+            sector === null ? "***" : sector.toString().padStart(3, "0")
+          )
+          .join(" : ") +
+        " :"
+    );
+
+    print(separatorLine);
+  }
+}
+
+async function commandPhaserControl() {
+  // 4250 REM PHASER CONTROL CODE BEGINS HERE
+  if (gameState.systemsDamage[SYSTEM_PHASER_CONTROL] < 0) {
+    print("PHASERS INOPERATIVE");
+    return;
+  }
+
+  if (gameState.sectorEnemiesCount <= 0) {
+    print(
+      `SCIENCE OFFICER ${gameOptions.nameScienceOfficer} REPORTS  'SENSORS SHOW NO ENEMY SHIPS`
+    );
+    print("                                IN THIS QUADRANT'");
+    return;
+  }
+
+  if (gameState.systemsDamage[SYSTEM_LIBRARY_COMPUTER] < 0) {
+    print("COMPUTER FAILURE HAMPERS ACCURACY");
+  }
+
+  print(
+    "PHASERS LOCKED ON TARGET;  ENERGY AVAILABLE = ",
+    gameState.energyRemaining,
+    " UNITS"
+  );
+  let phaserUnitsToFire;
+  const continueCommandLoop = true;
+  while (continueCommandLoop) {
+    phaserUnitsToFire = parseFloat(await input("NUMBER OF UNITS TO FIRE"));
+    if (phaserUnitsToFire <= 0) return;
+    if (gameState.energyRemaining - phaserUnitsToFire >= 0) {
+      break;
+    }
+    print(`ENERGY AVAILABLE = ${gameState.energyRemaining} UNITS`);
+  }
+
+  gameState.energyRemaining = gameState.energyRemaining - phaserUnitsToFire;
+
+  // FIXED: in the original, this was shield system. Changed to phaser system.
+  if (gameState.systemsDamage[SYSTEM_PHASER_CONTROL] < 0) {
+    phaserUnitsToFire = phaserUnitsToFire * Math.random();
+  }
+
+  // Spread phaser fire between all enemies
+  let phaserUnitsPerEnemy = Math.floor(
+    phaserUnitsToFire / gameState.sectorEnemiesCount
+  );
+  for (
+    let enemyIdx = 0;
+    enemyIdx < gameOptions.enemySpawnChance.length;
+    enemyIdx++
+  ) {
+    if (gameState.sectorEnemies[enemyIdx].health <= 0) {
+      // Skip dead enemies
+      continue;
+    }
+    print();
+
+    // Phaser damage falls off based on distance and a bit of chance
+    let phaserDamage = Math.floor(
+      (phaserUnitsPerEnemy / distanceFromEnemy(enemyIdx)) * (Math.random() + 2)
+    );
+    if (phaserDamage <= 0.15 * gameState.sectorEnemies[enemyIdx].health) {
+      print(
+        "SENSORS SHOW NO DAMAGE TO ENEMY AT ",
+        gameState.sectorEnemies[enemyIdx].posY,
+        " , ",
+        gameState.sectorEnemies[enemyIdx].posX
+      );
+      continue;
+    }
+    gameState.sectorEnemies[enemyIdx].health -= phaserDamage;
+
+    print(
+      `${phaserDamage} UNIT HIT ON ${gameOptions.nameEnemy} AT SECTOR ${gameState.sectorEnemies[enemyIdx].posY} , ${gameState.sectorEnemies[enemyIdx].posX}`
+    );
+
+    if (gameState.sectorEnemies[enemyIdx].health > 0) {
+      print(
+        `   (SENSORS SHOW ${gameState.sectorEnemies[enemyIdx].health} UNITS REMAINING)`
+      );
+      print();
+    } else {
+      print(`*** ${gameOptions.nameEnemy} DESTROYED ***`);
+      print();
+      gameState.sectorEnemiesCount = gameState.sectorEnemiesCount - 1;
+      gameState.enemiesRemaining = gameState.enemiesRemaining - 1;
+
+      // Remove enemy from display
+      insertInSectorMap(
+        gameOptions.sectorMapSymbols.empty,
+        gameState.sectorEnemies[enemyIdx].posY,
+        gameState.sectorEnemies[enemyIdx].posX
+      );
+
+      // Set enemy health at exactly zero
+      gameState.sectorEnemies[enemyIdx].health = 0;
+
+      // Update the galactic map with one fewer enemy
+      gameState.galacticMap[gameState.quadrantPositionY][
+        gameState.quadrantPositionX
+      ] -= 100;
+
+      // Copy updated galactic map sector to discovered map.
+      gameState.galacticMapDiscovered[gameState.quadrantPositionY][
+        gameState.quadrantPositionX
+      ] =
+        gameState.galacticMap[gameState.quadrantPositionY][
+          gameState.quadrantPositionX
+        ];
+
+      if (gameState.enemiesRemaining <= 0) {
+        // If that was the last enemy, we've won!
+        gameState.gameOver = true;
+        gameState.gameWon = true;
+        return;
+      }
+    }
+  }
+
+  enemiesShoot();
+}
+
+async function commandPhotonTorpedo() {
+  // 4690 REM PHOTON TORPEDO CODE BEGINS HERE
+  // 4700
+  if (gameState.photonTorpedoesRemaining <= 0) {
+    return print("ALL PHOTON TORPEDOES EXPENDED");
+  }
+  if (gameState.systemsDamage[SYSTEM_PHOTON_TUBES] < 0) {
+    return print("PHOTON TUBES ARE NOT OPERATIONAL");
+  }
+
+  let torpedoCourse = parseFloat(await input("PHOTON TORPEDO COURSE (1-9)"));
+  if (torpedoCourse == 9) torpedoCourse = 1;
+
+  if (isNaN(torpedoCourse) || torpedoCourse < 1 || torpedoCourse > 9) {
+    print(
+      `${gameOptions.nameWeaponsOfficer} REPORTS,  'INCORRECT COURSE DATA, SIR!'`
+    );
+    return;
+  }
+
+  const [courseDeltaY, courseDeltaX] = courseToDeltaXY(torpedoCourse);
+
+  gameState.energyRemaining = gameState.energyRemaining - 2;
+  gameState.photonTorpedoesRemaining = gameState.photonTorpedoesRemaining - 1;
+  let currPosY = gameState.sectorPositionY;
+  let currPosX = gameState.sectorPositionX;
+
+  print("TORPEDO TRACK:");
+
+  // Fly the torpedo along its course...
+  let quantizedPosY, quantizedPosX;
+  const forever = true;
+  while (forever) {
+    currPosY = currPosY + courseDeltaY;
+    currPosX = currPosX + courseDeltaX;
+
+    // The course will move in decimals, quantize to whole numbers
+    quantizedPosY = Math.floor(currPosY + 0.5);
+    quantizedPosX = Math.floor(currPosX + 0.5);
+
+    // Exiting the sector means the torpedo missed
+    if (
+      quantizedPosY < 1 ||
+      quantizedPosY > gameOptions.sectorHeight ||
+      quantizedPosX < 1 ||
+      quantizedPosX > gameOptions.sectorWidth
+    ) {
+      print("TORPEDO MISSED");
+      return enemiesShoot();
+    }
+
+    print(`               ${quantizedPosY} , ${quantizedPosX}`);
+
+    if (
+      !findInsectorMap(
+        gameOptions.sectorMapSymbols.empty,
+        quantizedPosY,
+        quantizedPosX
+      )
+    ) {
+      // Torpedo hit something solid, so stop flying.
+      break;
+    }
+  }
+
+  // Did the torpedo hit an enemy?
+  if (
+    findInsectorMap(
+      gameOptions.sectorMapSymbols.enemy,
+      quantizedPosY,
+      quantizedPosX
+    )
+  ) {
+    print(`*** ${gameOptions.nameEnemy} DESTROYED ***`);
+    gameState.sectorEnemiesCount = gameState.sectorEnemiesCount - 1;
+    gameState.enemiesRemaining = gameState.enemiesRemaining - 1;
+
+    if (gameState.enemiesRemaining <= 0) {
+      // If that was the last enemy, then we've won!
+      gameState.gameOver = true;
+      gameState.gameWon = true;
+      return;
+    }
+
+    // Find which enemy was hit and set health to zero
+    for (
+      let enemyIdx = 0;
+      enemyIdx < gameOptions.enemySpawnChance.length;
+      enemyIdx++
+    ) {
+      if (
+        quantizedPosY == gameState.sectorEnemies[enemyIdx].posY &&
+        quantizedPosX == gameState.sectorEnemies[enemyIdx].posX
+      ) {
+        gameState.sectorEnemies[enemyIdx].health = 0;
+        break;
+      }
+    }
+  }
+
+  // Did the torpedo hit a star?
+  if (
+    findInsectorMap(
+      gameOptions.sectorMapSymbols.star,
+      quantizedPosY,
+      quantizedPosX
+    )
+  ) {
+    print(
+      `STAR AT ${quantizedPosY} , ${quantizedPosX} ABSORBED TORPEDO ENERGY.`
+    );
+    return enemiesShoot();
+  }
+
+  // Did the torpedo hit a starbase?
+  if (
+    findInsectorMap(
+      gameOptions.sectorMapSymbols.base,
+      quantizedPosY,
+      quantizedPosX
+    )
+  ) {
+    print("*** STARBASE DESTROYED ***");
+    gameState.sectorStarbasesCount = gameState.sectorStarbasesCount - 1;
+    gameState.starbasesRemaining = gameState.starbasesRemaining - 1;
+    if (
+      gameState.starbasesRemaining <= 0 ||
+      gameState.enemiesRemaining <=
+        gameState.stardateCurrent -
+          gameOptions.stardateStart -
+          gameOptions.timeLimit
+    ) {
+      print("THAT DOES IT, CAPTAIN!!  YOU ARE HEREBY RELIEVED OF COMMAND");
+      print("AND SENTENCED TO 99 STARDATES AT HARD LABOR ON CYGNUS 12!!");
+      gameState.gameOver = true;
+      return;
+    } else {
+      print("STARFLEET COMMAND REVIEWING YOUR RECORD TO CONSIDER");
+      print("COURT MARTIAL!");
+      gameState.isDocked = false;
+    }
+  }
+
+  // If we hit an enemy or a starbase, update the sector and galaxy map to
+  // remove the thing destroyed
+  insertInSectorMap(
+    gameOptions.sectorMapSymbols.empty,
+    quantizedPosY,
+    quantizedPosX
+  );
+  gameState.galacticMap[gameState.quadrantPositionY][
+    gameState.quadrantPositionX
+  ] =
+    gameState.sectorEnemiesCount * 100 +
+    gameState.sectorStarbasesCount * 10 +
+    gameState.sectorStarsCount;
+  gameState.galacticMapDiscovered[gameState.quadrantPositionY][
+    gameState.quadrantPositionX
+  ] =
+    gameState.galacticMap[gameState.quadrantPositionY][
+      gameState.quadrantPositionX
+    ];
+
+  return enemiesShoot();
+}
+
+async function enemiesShoot() {
+  if (gameState.sectorEnemiesCount <= 0) {
+    return;
+  }
+
+  if (gameState.isDocked) {
+    print("STARBASE SHIELDS PROTECT THE ENTERPRISE");
+    return;
+  }
+
+  for (
+    let enemyIdx = 0;
+    enemyIdx < gameOptions.enemySpawnChance.length;
+    enemyIdx++
+  ) {
+    if (gameState.sectorEnemies[enemyIdx].health <= 0) {
+      continue;
+    }
+
+    // Enemy damage based on health with drop-off for distance and chance
+    const enemyWeaponDamage = Math.floor(
+      (gameState.sectorEnemies[enemyIdx].health / distanceFromEnemy(enemyIdx)) *
+        (2 + Math.random())
+    );
+    gameState.shieldsCurrent = gameState.shieldsCurrent - enemyWeaponDamage;
+
+    // Consume enemy health for firing weapon
+    gameState.sectorEnemies[enemyIdx].health = Math.floor(
+      gameState.sectorEnemies[enemyIdx].health / (3 + Math.random())
+    );
+
+    print(
+      `${enemyWeaponDamage} UNIT HIT ON ENTERPRISE FROM SECTOR ${gameState.sectorEnemies[enemyIdx].posY} , ${gameState.sectorEnemies[enemyIdx].posX}`
+    );
+
+    if (gameState.shieldsCurrent <= 0) {
+      // If we're out of shields, we're out of luck
+      gameState.gameOver = true;
+      gameState.destroyed = true;
+      return;
+    }
+
+    print(`      <SHIELDS DOWN TO ${gameState.shieldsCurrent} UNITS>`);
+    if (enemyWeaponDamage < 20) {
+      continue;
+    }
+
+    // Systems damage with 60% chance or a hit of more than 2% of shields
+    if (
+      Math.random() > gameOptions.systemDamageChanceOnHit ||
+      enemyWeaponDamage / gameState.shieldsCurrent <=
+        gameOptions.systemDamageHitThroughShields
+    ) {
+      continue;
+    }
+
+    // Random system damaged proportional to enemy damage and current shields
+    const systemIdx = randomInt(gameOptions.shipSystems.length);
+    const systemName = gameOptions.shipSystems[systemIdx];
+    gameState.systemsDamage[systemName] =
+      gameState.systemsDamage[systemName] -
+      enemyWeaponDamage / gameState.shieldsCurrent -
+      0.5 * Math.random();
+
+    print(`DAMAGE CONTROL REPORTS ${systemName} DAMAGED BY THE HIT`);
+  }
+}
+
+async function commandShieldControl() {
+  // 5520 REM SHIELD CONTROL
+  if (gameState.systemsDamage[SYSTEM_SHIELD_CONTROL] < 0) {
+    print("SHIELD CONTROL INOPERABLE");
+    return;
+  }
+
+  print(
+    "ENERGY AVAILABLE = ",
+    gameState.energyRemaining + gameState.shieldsCurrent
+  );
+  const shieldUnits = parseFloat(await input("NUMBER OF UNITS TO SHIELDS"));
+  if (shieldUnits < 0 || gameState.shieldsCurrent == shieldUnits) {
+    print("<SHIELDS UNCHANGED>");
+    return;
+  }
+  if (shieldUnits > gameState.energyRemaining + gameState.shieldsCurrent) {
+    print("SHIELD CONTROL REPORTS  'THIS IS NOT THE FEDERATION TREASURY.'");
+    print("<SHIELDS UNCHANGED>");
+    return;
+  }
+
+  gameState.energyRemaining =
+    gameState.energyRemaining + gameState.shieldsCurrent - shieldUnits;
+  gameState.shieldsCurrent = shieldUnits;
+
+  print("DEFLECTOR CONTROL ROOM REPORT:");
+  print(
+    `  'SHIELDS NOW AT ${Math.floor(
+      gameState.shieldsCurrent
+    )} UNITS PER YOUR COMMAND.`
+  );
+}
+
+async function commandDamageControl() {
+  // 5680 REM DAMAGE CONTROL
+  // 5690
+  // FIXME: Seems like damage control should work while docked?
+  if (gameState.systemsDamage[SYSTEM_DAMAGE_CONTROL] < 0) {
+    print("DAMAGE CONTROL REPORT NOT AVAILABLE");
+    return;
+  }
+
+  // 5910
+  print();
+  print("DEVICE             STATE OF REPAIR");
+  for (const systemName of gameOptions.shipSystems) {
+    print(
+      systemName.padEnd(25, " "),
+      Math.floor(gameState.systemsDamage[systemName] * 100) * 0.01
+    );
+  }
+  print();
+
+  if (gameState.isDocked) {
+    let repairTimeEstimate = 0;
+    for (const systemName of gameOptions.shipSystems) {
+      if (gameState.systemsDamage[systemName] < 0) {
+        repairTimeEstimate = repairTimeEstimate + 0.1;
+      }
+    }
+    if (repairTimeEstimate == 0) {
+      return;
+    }
+    print();
+    repairTimeEstimate = repairTimeEstimate + gameState.starbaseRepairDelay;
+    if (repairTimeEstimate >= 1) {
+      repairTimeEstimate = 0.9;
+    }
+    print("TECHNICIANS STANDING BY TO EFFECT REPAIRS TO YOUR SHIP;");
+    print(
+      `ESTIMATED TIME TO REPAIR: ${
+        0.01 * Math.floor(100 * repairTimeEstimate)
+      } STARDATES`
+    );
+    const authorizeRepairInput = await input(
+      "WILL YOU AUTHORIZE THE REPAIR ORDER (Y/N)"
+    );
+    if (authorizeRepairInput.toUpperCase() != "Y") {
+      return;
+    }
+    for (const systemName of gameOptions.shipSystems) {
+      gameState.systemsDamage[systemName] = 0;
+    }
+    gameState.stardateCurrent =
+      gameState.stardateCurrent + repairTimeEstimate + 0.1;
+  }
+}
+
+async function commandLibraryComputer() {
+  // 7280 REM LIBRARY COMPUTER CODE
+  // 7290
+  if (gameState.systemsDamage[SYSTEM_LIBRARY_COMPUTER] < 0) {
+    print("COMPUTER DISABLED");
+    return;
+  }
+  const commandInput = parseInt(
+    await input("COMPUTER ACTIVE AND AWAITING COMMAND")
+  );
+  if (commandInput < 0) return;
+  const command = COMMANDS_COMPUTER[commandInput] || computerHelp;
+  print();
+  await command();
+}
+
+const COMMANDS_COMPUTER = [
+  computerCumulativeRecord,
+  computerStatusReport,
+  computerPhotonData,
+  computerStarbaseData,
+  computerDirectionData,
+  computerGalaxyMap,
+];
+
+async function computerHelp() {
+  print("FUNCTIONS AVAILABLE FROM LIBRARY-COMPUTER:");
+  print("   0 = CUMULATIVE GALACTIC RECORD");
+  print("   1 = STATUS REPORT");
+  print("   2 = PHOTON TORPEDO DATA");
+  print("   3 = STARBASE NAV DATA");
+  print("   4 = DIRECTION/DISTANCE CALCULATOR");
+  print("   5 = GALAXY 'REGION NAME' MAP");
+  print();
+}
+
+async function computerPhotonData() {
+  if (gameState.sectorEnemiesCount <= 0) {
+    print(
+      `SCIENCE OFFICER ${gameOptions.nameScienceOfficer} REPORTS  'SENSORS SHOW NO ENEMY SHIPS`
+    );
+    print("                                IN THIS QUADRANT'");
+    return;
+  }
+
+  print(
+    `FROM ENTERPRISE TO ${gameOptions.nameEnemy} BATTLE CRUISER${
+      gameState.sectorEnemiesCount > 1 ? "S" : ""
+    }`
+  );
+
+  for (
+    let enemyIdx = 0;
+    enemyIdx < gameOptions.enemySpawnChance.length;
+    enemyIdx++
+  ) {
+    if (gameState.sectorEnemies[enemyIdx].health <= 0) continue;
+    computerDirectionCommon({
+      fromY: gameState.sectorPositionY,
+      fromX: gameState.sectorPositionX,
+      toY: gameState.sectorEnemies[enemyIdx].posY,
+      toX: gameState.sectorEnemies[enemyIdx].posX,
+    });
+  }
+}
+
+async function computerStarbaseData() {
+  if (gameState.sectorStarbasesCount == 0) {
+    print(
+      `MR. ${gameOptions.nameScienceOfficer} REPORTS,  'SENSORS SHOW NO STARBASES IN THIS QUADRANT.'`
+    );
+    return;
+  }
+  print("FROM ENTERPRISE TO STARBASE:");
+  computerDirectionCommon({
+    fromY: gameState.sectorPositionY,
+    fromX: gameState.sectorPositionX,
+    toY: gameState.sectorStarbaseY,
+    toX: gameState.sectorStarbaseX,
+  });
+}
+
+const inputCoords = async (prompt) =>
+  (await input(prompt)).split(",").map((s) => parseInt(s.trim()));
+
+async function computerDirectionData() {
+  print("DIRECTION/DISTANCE CALCULATOR:");
+  print(
+    `YOU ARE AT QUADRANT ${gameState.quadrantPositionY} , ${gameState.quadrantPositionX} SECTOR ${gameState.sectorPositionY} , ${gameState.sectorPositionX}`
+  );
+  print("PLEASE ENTER");
+  const [fromY, fromX] = await inputCoords("  INITIAL COORDINATES (Y,X)");
+  const [toY, toX] = await inputCoords("  FINAL COORDINATES (Y,X)");
+  computerDirectionCommon({ fromX, fromY, toX, toY });
+}
+
+async function computerDirectionCommon({ fromX, fromY, toX, toY }) {
+  const distance = Math.sqrt(
+    Math.pow(toX - fromX, 2) + Math.pow(toY - fromY, 2)
+  );
+  const direction =
+    1 +
+    (8 / (Math.PI * 2)) *
+      ((Math.atan2(0 - fromY - (0 - toY), fromX - toX) + Math.PI) %
+        (Math.PI * 2));
+
+  print(`DIRECTION = ${direction}`);
+  print(`DISTANCE = ${distance}`);
+}
+
+async function computerStatusReport() {
+  print("STATUS REPORT:");
+  print();
+  print(
+    `${
+      gameState.enemiesRemaining > 1
+        ? gameOptions.nameEnemies
+        : gameOptions.nameEnemy
+    } LEFT: ${gameState.enemiesRemaining}`
+  );
+  print(
+    `MISSION MUST BE COMPLETED IN ${
+      0.1 *
+      Math.floor(
+        (gameOptions.stardateStart +
+          gameOptions.timeLimit -
+          gameState.stardateCurrent) *
+          10
+      )
+    }  STARDATES`
+  );
+  if (gameState.starbasesRemaining < 1) {
+    print("YOUR STUPIDITY HAS LEFT YOU ON YOUR ON IN");
+    print("  THE GALAXY -- YOU HAVE NO STARBASES LEFT!");
+  } else {
+    print(
+      `THE FEDERATION IS MAINTAINING ${gameState.starbasesRemaining} STARBASE${
+        gameState.starbasesRemaining < 2 ? "" : "S"
+      } IN THE GALAXY`
+    );
+  }
+  commandDamageControl();
+}
+
+async function computerGalaxyMap() {
+  print("                        THE GALAXY");
+  computerCommonMap(false);
+}
+
+async function computerCumulativeRecord() {
+  print();
+  print(
+    `        COMPUTER RECORD OF GALAXY FOR QUADRANT ${gameState.quadrantPositionY} , ${gameState.quadrantPositionX}`
+  );
+  print();
+  computerCommonMap();
+}
+
+async function computerCommonMap(showMapCells = true) {
+  const W = gameOptions.galaxyWidth;  // 8
+  // Column header aligned with data rows (row label = 3 chars, each cell = "   NNN")
+  const colHeader = "   " + Array.from({length: W}, (_, i) => (i+1).toString().padStart(6, " ")).join("");
+  print(colHeader);
+
+  // Separator
+  const separator = "   " + Array.from({length: W}, () => "------").join("");
+
+  print(separator);
+  for (let mapY = 1; mapY <= gameOptions.galaxyHeight; mapY++) {
+    let out = mapY.toString().padStart(3, " ");
+
+    if (showMapCells) {
+      // 7630
+      for (let mapX = 1; mapX <= gameOptions.galaxyWidth; mapX++) {
+        out += `   ${
+          gameState.galacticMapDiscovered[mapY][mapX] == 0
+            ? "***"
+            : ("" + gameState.galacticMapDiscovered[mapY][mapX]).padStart(
+                3,
+                "0"
+              )
+        }`;
+      }
+    } else {
+      let quadrantName = buildQuadrantName(mapY, 1, true);
+      let centerSpacing = Math.floor(12 - 0.5 * quadrantName.length);
+      out += `  ${" ".repeat(centerSpacing)}${quadrantName}${" ".repeat(
+        centerSpacing
+      )}`;
+      quadrantName = buildQuadrantName(mapY, 5, true);
+      centerSpacing = Math.floor(12 - 0.5 * quadrantName.length);
+      out += `${" ".repeat(centerSpacing)}${quadrantName}`;
+    }
+
+    print(out);
+    print(separator);
+  }
+}
+
+async function endOfGame() {
+  if (gameState.destroyed) {
+    print();
+    print(
+      "THE ENTERPRISE HAS BEEN DESTROYED.  THEN FEDERATION WILL BE CONQUERED"
+    );
+  }
+
+  print(`IT IS STARDATE ${formatStardate(gameState.stardateCurrent)}`);
+
+  if (!gameState.gameWon) {
+    print(
+      `THERE WERE ${gameState.enemiesRemaining} ${gameOptions.nameEnemy} BATTLE CRUISERS LEFT AT`
+    );
+    print("THE END OF YOUR MISSION.");
+  } else {
+    print(
+      `CONGRULATION, CAPTAIN!  THEN LAST ${gameOptions.nameEnemy} BATTLE CRUISER`
+    );
+    print("MENACING THE FEDERATION HAS BEEN DESTROYED.");
+    print();
+    print(
+      "YOUR EFFICIENCY RATING IS ",
+      (1000 *
+        (gameState.enemiesInitialCount /
+          (gameState.stardateCurrent - gameOptions.stardateStart))) ^
+        2
+    );
+  }
+
+  print();
+  print();
+
+  if (gameState.starbasesRemaining > 0) {
+    print("THE FEDERATION IS IN NEED OF A NEW STARSHIP COMMANDER");
+    print("FOR A SIMILAR MISSION -- IF THERE IS A VOLUNTEER,");
+    const playAgainInput = await input("LET HIM STEP FORWARD AND ENTER 'AYE'");
+    if (playAgainInput.toUpperCase() == "AYE") {
+      gameState.shouldRestart = true;
+      return;
+    }
+  }
+}
+
+const COURSE_TO_XY = [
+  [0, 1],
+  [-1, 1],
+  [-1, 0],
+  [-1, -1],
+  [0, -1],
+  [1, -1],
+  [1, 0],
+  [1, 1],
+  [0, 1],
+];
+
+function courseToDeltaXY(course) {
+  const courseIdx = Math.floor(course) - 1;
+  //3110 X1=C(C1,1)+(C(C1+1,1)-C(C1,1))*(C1-INT(C1)):X=S1:Y=S2
+  //3140 X2=C(C1,2)+(C(C1+1,2)-C(C1,2))*(C1-INT(C1)):Q4=Q1:Q5=Q2
+  const courseDeltaY =
+    COURSE_TO_XY[courseIdx][0] +
+    (COURSE_TO_XY[courseIdx + 1][0] - COURSE_TO_XY[courseIdx][0]) *
+      (course - Math.floor(course));
+  const courseDeltaX =
+    COURSE_TO_XY[courseIdx][1] +
+    (COURSE_TO_XY[courseIdx + 1][1] - COURSE_TO_XY[courseIdx][1]) *
+      (course - Math.floor(course));
+  return [courseDeltaY, courseDeltaX];
+}
+
+function findSpaceInSectorMap() {
+  let posY,
+    posX,
+    foundEmptyPlace = false;
+  while (!foundEmptyPlace) {
+    posY = randomInt(8, 1);
+    posX = randomInt(8, 1);
+    foundEmptyPlace = findInsectorMap(
+      gameOptions.sectorMapSymbols.empty,
+      posY,
+      posX
+    );
+  }
+  return [posY, posX];
+}
+
+function findInsectorMap(str, y, x) {
+  const idx = (x - 1) * 3 + (y - 1) * 24;
+  return gameState.sectorMap.substring(idx, idx + 3) == str;
+}
+
+// 8660 REM INSERT IN STRING ARRAY FOR QUADRANT
+function insertInSectorMap(str, y, x) {
+  // 8670
+  const strPos = (x - 1) * 3 + (y - 1) * 24;
+  if (str.length != 3) {
+    throw "ERROR";
+  }
+  gameState.sectorMap =
+    gameState.sectorMap.slice(0, strPos) +
+    str +
+    gameState.sectorMap.slice(strPos + 3);
+}
+
+function buildQuadrantName(y, x, regionNameOnly = false) {
+  const xIdx = x - 1;
+  const yIdx = y - 1;
+  const name = gameOptions.quadrantNames[xIdx < 4 ? 0 : 1][yIdx];
+  return `${name}${
+    regionNameOnly ? "" : ` ${gameOptions.quadrantNumbers[xIdx % 4]}`
+  }`;
+}
+
+const randomInt = (max, min = 0) =>
+  Math.floor(min + Math.random() * (max - min));
+
+const formatStardate = (stardate) => Math.floor(stardate * 10) / 10;
+
+const distanceFromEnemy = (sectorEnemyIndex) =>
+  Math.sqrt(
+    Math.pow(
+      gameState.sectorEnemies[sectorEnemyIndex].posY -
+        gameState.sectorPositionY,
+      2
+    ) +
+      Math.pow(
+        gameState.sectorEnemies[sectorEnemyIndex].posX -
+          gameState.sectorPositionX,
+        2
+      )
+  );
+
+// ============================================================
+// GUI Controller
+// ============================================================
+
+const SECTOR_SYMBOLS = {
+  hero:  '<*>',
+  enemy: '+K+',
+  base:  '>!<',
+  star:  ' * ',
+  empty: '   '
+};
+
+// Build starfield background
+(function buildStarfield() {
+  const sf = document.getElementById('starfield');
+  for (let i = 0; i < 80; i++) {
+    const s = document.createElement('div');
+    s.className = 'bg-star';
+    const size = Math.random() * 2 + 0.5;
+    s.style.cssText = `
+      width:${size}px; height:${size}px;
+      top:${Math.random()*100}%; left:${Math.random()*100}%;
+      --dur:${(Math.random()*4+2).toFixed(1)}s;
+      animation-delay:${(Math.random()*4).toFixed(1)}s;
+    `;
+    sf.appendChild(s);
+  }
+})();
+
+// Build sector grid
+(function buildSectorGrid() {
+  const grid = document.getElementById('sector-grid');
+  for (let y = 1; y <= 8; y++) {
+    for (let x = 1; x <= 8; x++) {
+      const cell = document.createElement('div');
+      cell.className = 'sector-cell empty';
+      cell.id = `sc-${y}-${x}`;
+      grid.appendChild(cell);
+    }
+  }
+})();
+
+// Build galaxy grid
+(function buildGalaxyGrid() {
+  const grid = document.getElementById('galaxy-grid');
+  for (let y = 1; y <= 8; y++) {
+    for (let x = 1; x <= 8; x++) {
+      const cell = document.createElement('div');
+      cell.className = 'galaxy-cell unknown';
+      cell.id = `gc-${y}-${x}`;
+      grid.appendChild(cell);
+    }
+  }
+})();
+
+function updateDisplay() {
+  const gs = getGameState();
+  if (!gs || !gs.sectorMap) return;
+
+  // Update alert badge
+  const badge = document.getElementById('alert-badge');
+  const cond = gs.alertCondition || 'GREEN';
+  badge.className = 'alert-badge ' + cond;
+  badge.textContent = '● ' + alertName(cond);
+
+  // Update stardate
+  const L = LANG_UI[currentLang] || LANG_UI.ja;
+  document.getElementById('stardate-display').textContent =
+    L.stardateLabel + (Math.floor((gs.stardateCurrent || 0) * 10) / 10).toFixed(1);
+
+  // Update status bars
+  const energyTotal = (gs.energyRemaining || 0) + (gs.shieldsCurrent || 0);
+  const energyPct = Math.max(0, Math.min(100, energyTotal / 3000 * 100));
+  document.getElementById('stat-energy').textContent = Math.floor(energyTotal);
+  document.getElementById('bar-energy').style.width = energyPct + '%';
+  document.getElementById('bar-energy').style.background =
+    energyPct < 20 ? 'var(--red)' : energyPct < 40 ? 'var(--yellow)' : 'var(--green)';
+
+  const shieldPct = Math.max(0, Math.min(100, (gs.shieldsCurrent || 0) / 3000 * 100));
+  document.getElementById('stat-shields').textContent = Math.floor(gs.shieldsCurrent || 0);
+  document.getElementById('bar-shields').style.width = shieldPct + '%';
+
+  // Warn if shields are 0 with enemies in sector
+  const sheBtn = document.querySelector('[data-cmd="SHE"]');
+  if (sheBtn) {
+    const dangerUnshielded = gs.sectorEnemiesCount > 0 && (gs.shieldsCurrent || 0) <= 0;
+    sheBtn.classList.toggle('shield-warn', dangerUnshielded);
+    if (dangerUnshielded) sheBtn.title = L.shieldWarn;
+    else sheBtn.title = L.shieldTitle;
+  }
+
+  const torps = gs.photonTorpedoesRemaining || 0;
+  const torpsEl = document.getElementById('stat-torps');
+  torpsEl.textContent = torps;
+  torpsEl.className = 'stat-value' + (torps === 0 ? ' danger' : torps <= 3 ? ' warn' : '');
+
+  document.getElementById('stat-enemies').textContent = gs.enemiesRemaining ?? '—';
+  document.getElementById('stat-bases').textContent = gs.starbasesRemaining ?? '—';
+
+  const timeLeft = gs.stardateCurrent != null
+    ? Math.max(0, Math.floor((gameOptions.stardateStart + gameOptions.timeLimit - gs.stardateCurrent) * 10) / 10)
+    : '—';
+  const timeEl = document.getElementById('stat-time');
+  timeEl.textContent = timeLeft;
+  timeEl.className = 'stat-value' + (timeLeft < 5 ? ' danger' : timeLeft < 10 ? ' warn' : '');
+
+  // Show damage status on command buttons + damage report table
+  const SYS_CMD_MAP = {
+    'WARP ENGINES': 'NAV',
+    'SHORT RANGE SENSORS': 'SRS',
+    'LONG RANGE SENSORS': 'LRS',
+    'PHASER CONTROL': 'PHA',
+    'PHOTON TUBES': 'TOR',
+    'SHIELD CONTROL': 'SHE',
+    'DAMAGE CONTROL': 'DAM',
+    'LIBRARY-COMPUTER': 'COM',
+  };
+  const SYS_SHORT = {
+    'WARP ENGINES':       { ja: 'ワープ',     en: 'Warp' },
+    'SHORT RANGE SENSORS':{ ja: 'SRS',        en: 'SRS' },
+    'LONG RANGE SENSORS': { ja: 'LRS',        en: 'LRS' },
+    'PHASER CONTROL':     { ja: 'フェーザー', en: 'Phasers' },
+    'PHOTON TUBES':       { ja: '魚雷管',     en: 'Torpedoes' },
+    'DAMAGE CONTROL':     { ja: '修理装置',   en: 'Damage Ctrl' },
+    'SHIELD CONTROL':     { ja: 'シールド',   en: 'Shields' },
+    'LIBRARY-COMPUTER':   { ja: 'COM',        en: 'Computer' },
+  };
+  if (gs.systemsDamage) {
+    Object.entries(SYS_CMD_MAP).forEach(([sysName, cmd]) => {
+      const el = document.getElementById(`dmg-${cmd}`);
+      if (!el) return;
+      const val = gs.systemsDamage[sysName];
+      if (val !== undefined && val < 0) {
+        el.textContent = `▲${Math.abs(val).toFixed(1)}`;
+        el.className = 'cmd-dmg';
+      } else {
+        el.textContent = '';
+        el.className = 'cmd-dmg ok';
+      }
+    });
+
+    // Update damage report table
+    const tbody = document.getElementById('damage-body');
+    if (tbody) {
+      tbody.innerHTML = '';
+      for (const sysName of gameOptions.shipSystems) {
+        const val = gs.systemsDamage[sysName];
+        const shortNames = SYS_SHORT[sysName] || { ja: sysName, en: sysName };
+        const label = currentLang === 'en' ? shortNames.en : shortNames.ja;
+        const isDmg = val !== undefined && val < 0;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${label}</td><td class="${isDmg ? 'dr-dmg' : 'dr-ok'}">${isDmg ? '▲' + Math.abs(val).toFixed(2) : L.sysOk}</td>`;
+        tbody.appendChild(tr);
+      }
+    }
+  }
+
+  // Update mission summary
+  const ms = document.getElementById('mission-summary');
+  if (ms) {
+    const lang = currentLang === 'en';
+    ms.innerHTML = lang
+      ? `Enemies: <span>${gs.enemiesRemaining ?? '—'}</span>　Bases: <span>${gs.starbasesRemaining ?? '—'}</span>　Time: <span>${timeLeft}</span>`
+      : `残敵: <span>${gs.enemiesRemaining ?? '—'}</span>　基地: <span>${gs.starbasesRemaining ?? '—'}</span>　期限: <span>${timeLeft}</span>`;
+  }
+
+  // Update sector map (deferred while torpedo animation is running)
+  if (!_torpedoAnimating) {
+  const sectorMap = gs.sectorMap || '';
+  // Build position→enemy lookup for K# labels and health
+  const _enemyMap = {};
+  if (gs.sectorEnemies) {
+    gs.sectorEnemies.forEach((e, i) => {
+      if (e && e.health > 0) {
+        _enemyMap[`${Math.round(e.posY)}-${Math.round(e.posX)}`] = { idx: i, health: Math.floor(e.health) };
+      }
+    });
+  }
+  for (let y = 1; y <= 8; y++) {
+    for (let x = 1; x <= 8; x++) {
+      const idx = (x - 1) * 3 + (y - 1) * 24;
+      const cell3 = sectorMap.substring(idx, idx + 3);
+      const el = document.getElementById(`sc-${y}-${x}`);
+      if (!el) continue;
+      if (cell3 === SECTOR_SYMBOLS.hero) {
+        el.className = 'sector-cell hero';
+        el.textContent = '🚀';
+        el.title = L.shipName;
+      } else if (cell3 === SECTOR_SYMBOLS.enemy) {
+        el.className = 'sector-cell enemy';
+        const einfo = _enemyMap[`${y}-${x}`];
+        const klabel = einfo ? `K${einfo.idx + 1}` : 'K?';
+        const khp    = einfo ? einfo.health : '?';
+        el.innerHTML = `<span style="font-size:16px;line-height:1">👾</span><span class="cell-klabel">${klabel} ${khp}</span>`;
+        el.title = `${L.legEnemy} ${klabel} — ${currentLang === 'ja' ? 'シールド' : 'Shields'}: ${khp}`;
+      } else if (cell3 === SECTOR_SYMBOLS.base) {
+        el.className = 'sector-cell base';
+        el.textContent = '🏛';
+        el.title = L.legBase;
+      } else if (cell3 === SECTOR_SYMBOLS.star) {
+        el.className = 'sector-cell star';
+        el.textContent = '⭐';
+        el.title = L.legStar;
+      } else {
+        el.className = 'sector-cell empty';
+        el.textContent = '';
+        el.title = '';
+      }
+    }
+  }
+  } // end !_torpedoAnimating
+
+  // Galaxy map
+  const discovered = gs.galacticMapDiscovered;
+  const qy = gs.quadrantPositionY;
+  const qx = gs.quadrantPositionX;
+  for (let y = 1; y <= 8; y++) {
+    for (let x = 1; x <= 8; x++) {
+      const el = document.getElementById(`gc-${y}-${x}`);
+      if (!el) continue;
+      const isCurrent = (y === qy && x === qx);
+      const val = discovered && discovered[y] && discovered[y][x];
+
+      if (val) {
+        const k = Math.floor(val / 100);
+        const b = Math.floor((val % 100) / 10);
+        const s = val % 10;
+        let cls = 'galaxy-cell discovered';
+        if (k > 0)      cls += ' has-enemy';
+        else if (b > 0) cls += ' has-base';
+        if (isCurrent)  cls += ' current';
+        el.className = cls;
+        el.innerHTML =
+          `<span style="color:${k>0?'var(--red)':'#444'}">${k}</span>` +
+          `<span style="color:${b>0?'var(--cyan)':'#444'}">${b}</span>` +
+          `<span style="color:${s>0?'#888':'#333'}">${s}</span>`;
+        const loc = `(${y},${x})`;
+        el.setAttribute('data-tip', currentLang === 'en'
+          ? `Klingons:${k} Bases:${b} Stars:${s}${isCurrent?' ← HERE':''}`
+          : `クリンゴン:${k} 宇宙基地:${b} 恒星:${s}${isCurrent?' ← 現在位置':''}`);
+      } else if (isCurrent) {
+        // entered but galacticMapDiscovered not yet set (shouldn't happen)
+        el.className = 'galaxy-cell current';
+        el.innerHTML = '<span style="color:var(--yellow)">⊕</span>';
+        el.setAttribute('data-tip', currentLang === 'en' ? `Current` : `現在位置`);
+      } else {
+        el.className = 'galaxy-cell unknown';
+        el.innerHTML = '<span style="color:#333">---</span>';
+        el.setAttribute('data-tip', currentLang === 'en' ? `Unknown` : `未探索`);
+      }
+    }
+  }
+
+}
+
+// ---- Translation ----
+const SYSTEM_NAME_MAP = {
+  'WARP ENGINES':          'ワープ',
+  'SHORT RANGE SENSORS':   'SRS',
+  'LONG RANGE SENSORS':    'LRS',
+  'PHASER CONTROL':        'フェーザー',
+  'PHOTON TUBES':          '魚雷管',
+  'DAMAGE CONTROL':        '修理装置',
+  'SHIELD CONTROL':        'シールド',
+  'LIBRARY-COMPUTER':      'COM',
+};
+
+let currentLang = localStorage.getItem('lang') || 'ja';
+
+const LANG_UI = {
+  ja: {
+    title: 'スーパー スタートレック',
+    shipName: '宇宙艦エンタープライズ NCC-1701',
+    panelSector: '◈ セクターマップ',
+    panelGalaxy: '銀河マップ',
+    panelStatus: '艦船ステータス',
+    panelSystems: '◈ システム状態',
+    panelLog: '通信ログ',
+    panelCommand: 'コマンド',
+    legHero: 'エンタープライズ',
+    legEnemy: 'クリンゴン',
+    legBase: '宇宙基地',
+    legStar: '恒星',
+    legHere: '現在位置',    dockTitle: '🛸 ドッキング中',
+    dockEnergy: '⚡ エネルギー全回復済み',
+    dockTorps: '🚀 魚雷全補充済み',
+    dockShields: '🛡 シールド解除済み',
+    dockRepair: '🔧 <strong>DAM</strong> コマンドでシステム修理可能',
+    statEnergy: 'エネルギー',
+    statShields: 'シールド',
+    statTorps: '光子魚雷',
+    statEnemies: '残敵数',
+    statBases: '宇宙基地',
+    statTime: '残り時間',
+    backBtn: '← 戻る',
+    cmdNav: '（航法・ワープ）',
+    cmdSrs: '（近距離スキャン）',
+    cmdLrs: '（長距離スキャン）',
+    cmdPha: '（フェーザー）',
+    cmdTor: '（光子魚雷）',
+    cmdShe: '（シールド）',
+    cmdDam: '（損傷報告）',
+    cmdCom: '（コンピュータ）',
+    cmdXxx: '（指揮権返上）',
+    ttlNav: '航法／ワープ',
+    ttlSrs: '近距離スキャン',
+    ttlLrs: '長距離スキャン',
+    ttlPha: 'フェーザー発射',
+    ttlTor: '光子魚雷発射',
+    ttlShe: 'シールド制御',
+    ttlDam: '損傷報告',
+    ttlCom: 'ライブラリーコンピュータ',
+    ttlXxx: '指揮権返上',
+    dirN: '北', dirNE: '北東', dirE: '東', dirSE: '南東',
+    dirS: '南', dirSW: '南西', dirW: '西', dirNW: '北西',
+    compassFracPh: '小数入力 (例: 1.5)',
+    compassFracOk: '決定',
+    warpUnit: 'ワープ',
+    warpBtn: 'ワープ開始',
+    energyAll: '全量',
+    energyHalf: '半分',
+    energyZero: 'ゼロ',
+    energyOk: '決定',
+    comp0: '累積銀河記録',
+    comp1: '状態報告',
+    comp2: '魚雷データ',
+    comp3: '基地航法',
+    comp4: '方向・距離',
+    comp5: '地域名マップ',
+    yesYes: '✔ はい（Y）',
+    yesNo: '✘ いいえ（N）',
+    coordY: 'Y：',
+    coordX: 'X：',
+    coordsOk: '決定',
+    galaxyLegend: '各セル：<span style="color:var(--red);font-family:monospace">K</span>クリンゴン <span style="color:var(--cyan);font-family:monospace">B</span>宇宙基地 <span style="color:#888;font-family:monospace">★</span>恒星 &nbsp;<span style="color:var(--yellow)">⊕</span>現在位置 &nbsp;<span style="color:#444;font-family:monospace">---</span>未探索',
+    stardateLabel: '宇宙暦: ',
+    alertGreen: '緑（安全）',
+    alertYellow: '黄（注意）',
+    alertRed: '赤（戦闘）',
+    alertDocked: 'ドッキング中',
+    srsRepaired: '近距離センサー修理完了 — クリックして確認',
+    srsAuto: '近距離スキャン（NAV後に自動実行）',
+    lrsRepaired: '長距離センサー修理完了 — クリックして確認',
+    lrsAuto: '長距離スキャン（NAV後に自動実行）',
+    shieldWarn: '⚠ シールドが0！クリンゴンがいます — 今すぐシールドを上げてください',
+    shieldTitle: 'シールド制御',
+    lrsLegend: '  ╰ 各セル：百の位＝クリンゴン数　十の位＝宇宙基地数　一の位＝恒星数',
+    sectorEnemyTitle: 'セクター内のクリンゴン',
+    gameOver: '★ ゲームオーバー ★',
+    sysOk: '正常',
+    alertDefault: '● 緑（安全）',
+    stardateInit: '宇宙暦: —',
+    clickFrom: 'セクターマップで始点をクリックしてください。',
+    clickTo:   'セクターマップで終点をクリックしてください。',
+    clickCancel: '円の外側をクリックするとキャンセル',
+    cancelBtn: '✕ キャンセル',
+  },
+  en: {
+    title: 'Super Star Trek',
+    shipName: 'USS Enterprise NCC-1701',
+    panelSector: '◈ Sector Map',
+    panelGalaxy: 'Galaxy Map',
+    panelStatus: 'Ship Status',
+    panelSystems: '◈ Systems',
+    panelLog: 'Communication Log',
+    panelCommand: 'Command',
+    legHero: 'Enterprise',
+    legEnemy: 'Klingon',
+    legBase: 'Starbase',
+    legStar: 'Star',
+    legHere: 'Current',    dockTitle: '🛸 Docked',
+    dockEnergy: '⚡ Energy fully restored',
+    dockTorps: '🚀 Torpedoes restocked',
+    dockShields: '🛡 Shields lowered',
+    dockRepair: '🔧 Use <strong>DAM</strong> to repair systems',
+    statEnergy: 'Energy',
+    statShields: 'Shields',
+    statTorps: 'Torpedoes',
+    statEnemies: 'Enemies',
+    statBases: 'Starbases',
+    statTime: 'Time Left',
+    backBtn: '← Back',
+    cmdNav: '(Navigation)',
+    cmdSrs: '(Short Range)',
+    cmdLrs: '(Long Range)',
+    cmdPha: '(Phasers)',
+    cmdTor: '(Torpedoes)',
+    cmdShe: '(Shields)',
+    cmdDam: '(Damage Rpt)',
+    cmdCom: '(Computer)',
+    cmdXxx: '(Resign)',
+    ttlNav: 'Navigation / Warp',
+    ttlSrs: 'Short Range Scan',
+    ttlLrs: 'Long Range Scan',
+    ttlPha: 'Fire Phasers',
+    ttlTor: 'Fire Torpedoes',
+    ttlShe: 'Shield Control',
+    ttlDam: 'Damage Report',
+    ttlCom: 'Library Computer',
+    ttlXxx: 'Resign Command',
+    dirN: 'N', dirNE: 'NE', dirE: 'E', dirSE: 'SE',
+    dirS: 'S', dirSW: 'SW', dirW: 'W', dirNW: 'NW',
+    compassFracPh: 'Decimal (e.g. 1.5)',
+    compassFracOk: 'Go',
+    warpUnit: 'Warp',
+    warpBtn: 'Engage Warp',
+    energyAll: 'All',
+    energyHalf: 'Half',
+    energyZero: 'Zero',
+    energyOk: 'Go',
+    comp0: 'Cumul. Galactic Record',
+    comp1: 'Status Report',
+    comp2: 'Torpedo Data',
+    comp3: 'Starbase Nav',
+    comp4: 'Dir/Distance Calc',
+    comp5: 'Galaxy Region Map',
+    yesYes: '✔ Yes (Y)',
+    yesNo: '✘ No (N)',
+    coordY: 'Y:',
+    coordX: 'X:',
+    coordsOk: 'Go',
+    galaxyLegend: 'Each cell: <span style="color:var(--red);font-family:monospace">K</span>Klingon <span style="color:var(--cyan);font-family:monospace">B</span>Base <span style="color:#888;font-family:monospace">★</span>Star &nbsp;<span style="color:var(--yellow)">⊕</span>Here &nbsp;<span style="color:#444;font-family:monospace">---</span>Unknown',
+    stardateLabel: 'Stardate: ',
+    alertGreen: 'Green (Safe)',
+    alertYellow: 'Yellow (Caution)',
+    alertRed: 'Red (Combat)',
+    alertDocked: 'Docked',
+    srsRepaired: 'SRS repaired — click to scan',
+    srsAuto: 'Short Range Scan (auto after NAV)',
+    lrsRepaired: 'LRS repaired — click to scan',
+    lrsAuto: 'Long Range Scan (auto after NAV)',
+    shieldWarn: '⚠ Shields at 0! Klingons present — raise shields now',
+    shieldTitle: 'Shield Control',
+    lrsLegend: '  ╰ Each cell: hundreds=Klingons  tens=Bases  ones=Stars',
+    sectorEnemyTitle: 'Klingons in Sector',
+    gameOver: '★ Game Over ★',
+    sysOk: 'OK',
+    alertDefault: '● Green (Safe)',
+    stardateInit: 'Stardate: —',
+    clickFrom: 'Click the FROM point on the sector map.',
+    clickTo:   'Click the TO point on the sector map.',
+    clickCancel: 'Click outside the circle to cancel',
+    cancelBtn: '✕ Cancel',
+  },
+};
+
+function applyLang() {
+  const L = LANG_UI[currentLang] || LANG_UI.ja;
+  // Update lang button label
+  const btn = document.getElementById('lang-btn');
+  if (btn) btn.textContent = currentLang === 'ja' ? '🌐 EN' : '🌐 JP';
+  // data-i18n text content
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (L[key] !== undefined) el.textContent = L[key];
+  });
+  // data-i18n-html innerHTML
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const key = el.getAttribute('data-i18n-html');
+    if (L[key] !== undefined) el.innerHTML = L[key];
+  });
+  // data-i18n-title title attribute
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.getAttribute('data-i18n-title');
+    if (L[key] !== undefined) el.title = L[key];
+  });
+  // data-i18n-ph placeholder
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const key = el.getAttribute('data-i18n-ph');
+    if (L[key] !== undefined) el.placeholder = L[key];
+  });
+  // Compass directions
+  const dirMap = { N:'dirN', NE:'dirNE', E:'dirE', SE:'dirSE', S:'dirS', SW:'dirSW', W:'dirW', NW:'dirNW' };
+  document.querySelectorAll('[data-dir]').forEach(el => {
+    const d = el.getAttribute('data-dir');
+    if (dirMap[d] && L[dirMap[d]]) el.textContent = L[dirMap[d]];
+  });
+  // Update SRS/LRS button titles
+  updateSrsButton();
+  updateLrsButton();
+  // Refresh dynamic displays (alert badge, stardate, damage table)
+  updateDisplay();
+}
+
+function alertName(cond) {
+  const L = LANG_UI[currentLang] || LANG_UI.ja;
+  const map = { GREEN: L.alertGreen, YELLOW: L.alertYellow, RED: L.alertRed, DOCKED: L.alertDocked };
+  return map[cond] || cond;
+}
+
+const PROMPT_MAP = {
+  'COMMAND': 'コマンド',
+  'COURSE (0-9)': 'コース (0-9)',
+  'COURSE (1-9)': 'コース (1-9)',
+  'WARP FACTOR (0-8)': 'ワープ係数 (0-8)',
+  'WARP FACTOR (0-0.2)': 'ワープ係数 (0-0.2)',
+  'NUMBER OF UNITS TO FIRE': '発射エネルギー量',
+  'NUMBER OF UNITS TO SHIELDS': 'シールドエネルギー量',
+  'TORPEDO COURSE (0-9)': '魚雷コース (0-9)',
+  'PHOTON TORPEDO COURSE (1-9)': '魚雷コース (1-9)',
+  'COMPUTER OPTION [0-5]': 'コンピュータオプション [0-5]',
+  'COMPUTER ACTIVE AND AWAITING COMMAND': 'コンピュータ起動中',
+  'INITIAL COORDINATES (Y,X)': '開始座標 (Y,X)',
+  'FINAL COORDINATES (Y,X)': '終了座標 (Y,X)',
+  'WILL YOU AUTHORIZE THE REPAIR ORDER (Y/N)': '修理を承認しますか？',
+  "LET HIM STEP FORWARD AND ENTER 'AYE'": '続けますか？（AYE で再プレイ）',
+  'PRESS ENTER TO RESTART': 'Enterキーを押してリスタート',
+};
+
+// Translate a prompt string
+function translatePrompt(p) {
+  if (currentLang === 'en') return p;
+  const key = p.trim().toUpperCase();
+  if (PROMPT_MAP[key]) return PROMPT_MAP[key];
+  // warp factor with variable max
+  const warpMatch = p.match(/WARP FACTOR \(0-([^)]+)\)/i);
+  if (warpMatch) return `ワープ係数 (0-${warpMatch[1]})`;
+  return p;
+}
+
+// Translate system names
+function translateSysName(n) {
+  if (currentLang === 'en') return n;
+  return SYSTEM_NAME_MAP[n.trim()] || n;
+}
+
+// Translate game text line by line
+function translateText(text) {
+  if (!text) return text;
+  if (currentLang === 'en') return text;
+  let t = text;
+
+  // ---- Mission intro ----
+  t = t.replace(/YOUR ORDERS ARE AS FOLLOWS:/g, 'あなたへの命令は以下の通り：');
+  t = t.replace(/DESTROY THE (\d+) KLINGON WARSHIPS WHICH HAVE INVADED/g,
+    '$1 隻のクリンゴン戦艦を撃滅せよ。');
+  t = t.replace(/THE GALAXY BEFORE THEY CAN ATTACK FEDERATION HEADQUARTERS/g,
+    '銀河系から排除し、連邦本部への攻撃を阻止せよ。');
+  t = t.replace(/ON STARDATE ([\d.]+) THIS GIVES YOU (\d+) DAYS\.\s+THERE\s+(ARE|IS)\s*/g,
+    '宇宙暦 $1、制限時間 $2 日間。');
+  t = t.replace(/(\d+) STARBASES? (?:ARE )?IN THE GALAXY FOR RESUPPLYING YOUR SHIP/g,
+    '補給基地は $1 か所ある。');
+
+  // ---- Quadrant entry ----
+  t = t.replace(/YOUR MISSION BEGINS WITH YOUR STARSHIP LOCATED/g,
+    '任務開始——艦の現在位置：');
+  t = t.replace(/IN THE GALACTIC QUADRANT, '(.+)'\./g,
+    '銀河系クアドラント「$1」');
+  t = t.replace(/NOW ENTERING (.+) QUADRANT \. \. \./g,
+    '$1 クアドラントに進入中・・・');
+
+  // ---- SRS status lines ----
+  // These labels appear mid-line (after sector map cells), so ^ anchor doesn't work.
+  // Use \s{2,} to distinguish from single-space sentence forms (CONDITION RED, etc.)
+  // Japanese labels are padded to 14 display columns (CJK=2cols, ASCII=1col) so
+  // values align vertically: クアドラント：/総エネルギー：/残クリンゴン：= 14cols
+  t = t.replace(/STARDATE\s{2,}([\d.]+)/g,          '宇宙暦：      $1'); // 8→14: +6sp
+  t = t.replace(/CONDITION\s{2,}(\S+)/g,             '警戒：        $1'); // 6→14: +8sp
+  t = t.replace(/QUADRANT\s{2,}(\d+)\s*,\s*(\d+)/g, 'クアドラント：$1,$2'); // 14: +0sp
+  t = t.replace(/SECTOR\s{2,}(\d+)\s*,\s*(\d+)/g,   'セクター：    $1,$2'); // 10→14: +4sp
+  t = t.replace(/PHOTON TORPEDOES\s{2,}(\d+)/g,      '魚雷：        $1'); // 6→14: +8sp
+  t = t.replace(/TOTAL ENERGY\s{2,}([\d.]+)/g,       '総エネルギー：$1'); // 14: +0sp
+  t = t.replace(/SHIELDS\s{2,}([\d.]+)/g,            'シールド：    $1'); // 10→14: +4sp
+  t = t.replace(/KLINGONS REMAINING\s+(\d+)/g,       '残クリンゴン：$1'); // 14: +0sp
+
+  // ---- Combat ----
+  t = t.replace(/COMBAT AREA\s+CONDITION RED/g, '戦闘区域　警戒レベル：赤');
+  t = t.replace(/SHIELDS DANGEROUSLY LOW/g, 'シールド危険水準！');
+  t = t.replace(/CONDITION RED/g, '警戒レベル：赤');
+
+  // ---- Fatal error ----
+  t = t.replace(/\*\* FATAL ERROR \*\*\s+YOU'VE JUST STRANDED YOUR SHIP IN SPACE/g,
+    '★ 致命的エラー ★ 艦が宇宙空間に取り残された！');
+  t = t.replace(/YOU HAVE INSUFFICIENT MANEUVERING ENERGY, AND SHIELD CONTROL/g,
+    '機動エネルギー不足、シールド制御も');
+  t = t.replace(/IS PRESENTLY INCAPABLE OF CROSS-CIRCUITING TO ENGINE ROOM!!/g,
+    'エンジンルームへの迂回接続が不能！！');
+
+  // ---- Commands help ----
+  t = t.replace(/ENTER ONE OF THE FOLLOWING:/g, '以下のコマンドを入力してください：');
+  t = t.replace(/NAV\s+\(TO SET COURSE\)/g, 'NAV  (コース設定)');
+  t = t.replace(/SRS\s+\(FOR SHORT RANGE SENSOR SCAN\)/g, 'SRS  (近距離センサースキャン)');
+  t = t.replace(/LRS\s+\(FOR LONG RANGE SENSOR SCAN\)/g, 'LRS  (長距離センサースキャン)');
+  t = t.replace(/PHA\s+\(TO FIRE PHASERS\)/g, 'PHA  (フェーザー発射)');
+  t = t.replace(/TOR\s+\(TO FIRE PHOTON TORPEDOES\)/g, 'TOR  (光子魚雷発射)');
+  t = t.replace(/SHE\s+\(TO RAISE OR LOWER SHIELDS\)/g, 'SHE  (シールド制御)');
+  t = t.replace(/DAM\s+\(FOR DAMAGE CONTROL REPORTS\)/g, 'DAM  (ダメージ報告)');
+  t = t.replace(/COM\s+\(TO CALL ON LIBRARY-COMPUTER\)/g, 'COM  (ライブラリーコンピュータ)');
+  t = t.replace(/XXX\s+\(TO RESIGN YOUR COMMAND\)/g, 'XXX  (指揮権返上)');
+
+  // ---- Sensors / docking ----
+  t = t.replace(/SHIELDS DROPPED FOR DOCKING PURPOSES/g,
+    'ドッキングのためシールドを降下');
+  t = t.replace(/\*\*\* SHORT RANGE SENSORS ARE OUT \*\*\*/g,
+    '★★★ 近距離センサー停止 ★★★');
+  t = t.replace(/LONG RANGE SENSORS ARE INOPERABLE/g,
+    '長距離センサー停止中');
+  t = t.replace(/LONG RANGE SCAN FOR QUADRANT\s+(\d+)\s*,\s*(\d+)/g,
+    'クアドラント $1,$2 の長距離スキャン');
+
+  // ---- Navigation ----
+  t = t.replace(/(.+) REPORTS, 'INCORRECT COURSE DATA, SIR!'/g,
+    '$1「コースデータが不正です、艦長！」');
+  t = t.replace(/WARP ENGINES ARE DAMAGED\.\s+MAXIMUM SPEED = WARP ([\d.]+)/g,
+    'ワープエンジン損傷中。最高速度 = ワープ $1');
+  t = t.replace(/CHIEF ENGINEER (.+) REPORTS '(.+)WON'T TAKE WARP ([\d.]+)!'/g,
+    '機関長 $1「ワープ $3 には耐えられません！」');
+  t = t.replace(/ENGINEERING REPORTS\s+'INSUFFICIENT ENERGY AVAILABLE/g,
+    '工学部「エネルギー不足 —');
+  t = t.replace(/FOR MANEUVERING AT WARP ([\d.]+) !'/g,
+    'ワープ $1 での機動には不十分です！」');
+  t = t.replace(/DEFLECTOR CONTROL ROOM ACKNOWLEDGES ([\d.]+) UNITS OF ENERGY/g,
+    'デフレクター制御室：シールドに $1 ユニット配備中。');
+  t = t.replace(/PRESENTLY DEPLOYED TO SHIELDS\./g, '');
+  t = t.replace(/DAMAGE CONTROL REPORT:/g, 'ダメージ制御報告：');
+  t = t.replace(/(.+) REPAIR COMPLETED\./g, '$1 修理完了。');
+  t = t.replace(/(.+) DAMAGED$/g, '$1 損傷');
+  t = t.replace(/(.+) STATE OF REPAIR IMPROVED/g, '$1 修理状態改善');
+  t = t.replace(/WARP ENGINES SHUT DOWN AT SECTOR (\d+) , (\d+) DUE TO BAD NAVAGATION/g,
+    '不正航法によりセクター $1,$2 でワープエンジン停止');
+  t = t.replace(/SHIELD CONTROL SUPPLIES ENERGY TO COMPLETE THE MANEUVER\./g,
+    'シールド制御がエネルギーを供給して機動完了。');
+
+  // ---- Perimeter ----
+  t = t.replace(/(.+) REPORTS MESSAGE FROM STARFLEET COMMAND:/g,
+    '$1 より宇宙艦隊司令部からの通信：');
+  t = t.replace(/'PERMISSION TO ATTEMPT CROSSING OF GALACTIC PERIMETER/g,
+    '「銀河系周縁の横断許可は');
+  t = t.replace(/IS HEREBY \*DENIED\*\.\s+SHUT DOWN YOUR ENGINES\.'/g,
+    '　*拒否* されました。エンジンを停止せよ。」');
+  t = t.replace(/CHIEF ENGINEER (.+) REPORTS\s+'WARP ENGINES SHUT DOWN/g,
+    '機関長 $1「ワープエンジン停止');
+  t = t.replace(/AT SECTOR (\d+) , (\d+) OF QUADRANT (\d+) , (\d+)\.'/g,
+    '　クアドラント $3,$4、セクター $1,$2 にて。」');
+
+  // ---- Phasers ----
+  t = t.replace(/PHASERS INOPERATIVE/g, 'フェーザー作動不能');
+  t = t.replace(/(.+) REPORTS, 'SENSORS SHOW NO ENEMY SHIPS\s+IN THIS QUADRANT'/g,
+    '$1「このクアドラントに敵艦はいません」');
+  t = t.replace(/COMPUTER FAILURE HAMPERS ACCURACY/g,
+    'コンピュータ障害で精度低下');
+  t = t.replace(/PHASERS LOCKED ON TARGET;\s+ENERGY WILL BE DISTRIBUTED EQUALLY/g,
+    'フェーザー照準完了；エネルギーを均等配分');
+  t = t.replace(/ENERGY AVAILABLE = ([\d.]+) UNITS/g,
+    '利用可能エネルギー = $1 ユニット');
+  t = t.replace(/SHIELDS HITTING (.+) AT SECTOR (\d+) , (\d+)/g,
+    'セクター $2,$3 の $1 にフェーザー命中');
+  t = t.replace(/\(SENSORS SHOW (\d+) UNITS\)/g, '（センサー読取：$1 ユニット）');
+
+  // ---- Torpedoes ----
+  t = t.replace(/ALL PHOTON TORPEDOES EXPENDED/g, '光子魚雷が尽きた');
+  t = t.replace(/PHOTON TUBES ARE NOT OPERATIONAL/g, '光子魚雷発射管停止中');
+  t = t.replace(/TORPEDO TRACK:/g, '魚雷軌跡：');
+  t = t.replace(/TORPEDO MISSED/g, '魚雷が外れた');
+  t = t.replace(/STAR AT (\d+) , (\d+) ABSORBED TORPEDO ENERGY\./g,
+    'セクター $1,$2 の恒星が魚雷エネルギーを吸収。');
+  t = t.replace(/\*\*\* KLINGON DESTROYED \*\*\*/g, '★★★ クリンゴン撃破 ★★★');
+  t = t.replace(/\*\*\* STARBASE DESTROYED \*\*\*/g, '★★★ 宇宙基地破壊 ★★★');
+  t = t.replace(/THAT DOES IT, CAPTAIN!!\s+YOU ARE HEREBY RELIEVED OF COMMAND/g,
+    'やってしまった、艦長！！あなたは指揮権を剥奪され');
+  t = t.replace(/AND SENTENCED TO 99 STARDATES AT HARD LABOR ON CYGNUS 12!!/g,
+    'シグナス12での99宇宙暦の重労働を宣告される！！');
+  t = t.replace(/STARFLEET COMMAND REVIEWING YOUR RECORD TO CONSIDER/g,
+    '宇宙艦隊司令部があなたの記録を審査中、');
+  t = t.replace(/COURT MARTIAL!/g, '軍法会議が行われる！');
+  t = t.replace(/STARBASE SHIELDS PROTECT THE ENTERPRISE/g,
+    '宇宙基地のシールドがエンタープライズを守る');
+
+  // ---- Enemy fire ----
+  t = t.replace(/KLINGON AT SECTOR (\d+) , (\d+) ATTACKS/g,
+    'セクター $1,$2 のクリンゴンが攻撃');
+  t = t.replace(/<SHIELDS DOWN TO ([\d.]+) UNITS>/g,
+    '<シールド残 $1 ユニット>');
+  t = t.replace(/DAMAGE CONTROL REPORTS (.+) DAMAGED BY THE HIT/g,
+    'ダメージ制御：$1 が被弾により損傷');
+  t = t.replace(/SHIELD CONTROL INOPERABLE/g, 'シールド制御停止');
+
+  // ---- Shields ----
+  t = t.replace(/<SHIELDS UNCHANGED>/g, '<シールド変更なし>');
+  t = t.replace(/SHIELD CONTROL REPORTS\s+'THIS IS NOT THE FEDERATION TREASURY\.'/g,
+    'シールド制御「ここは連邦宝庫ではありません。」');
+  t = t.replace(/DEFLECTOR CONTROL ROOM REPORT:/g, 'デフレクター制御室報告：');
+  t = t.replace(/  'SHIELDS NOW AT (\d+) UNITS'/g, '  「シールド現在 $1 ユニット」');
+
+  // ---- Damage control ----
+  t = t.replace(/DAMAGE CONTROL REPORT NOT AVAILABLE/g,
+    'ダメージ制御報告を取得できません');
+  t = t.replace(/DEVICE\s+STATE OF REPAIR/g,
+    'システム    状態');
+  t = t.replace(/TECHNICIANS STANDING BY TO EFFECT REPAIRS TO YOUR SHIP;/g,
+    '技術者が艦の修理に待機中；');
+  t = t.replace(/ESTIMATED TIME TO REPAIR:\s*([\d.]+)\s*STARDATES/g,
+    '修理予定時間：$1 宇宙暦');
+  t = t.replace(/STARBASE REPAIR TAKES ([\d.]+) STARDATES/g,
+    '宇宙基地での修理に $1 宇宙暦かかります');
+
+  // ---- Computer ----
+  t = t.replace(/COMPUTER DISABLED/g, 'コンピュータ停止中');
+  t = t.replace(/FUNCTIONS AVAILABLE FROM LIBRARY-COMPUTER:/g,
+    'ライブラリーコンピュータ機能：');
+  t = t.replace(/0 = CUMULATIVE GALACTIC RECORD/g, '0 = 累積銀河記録');
+  t = t.replace(/1 = STATUS REPORT/g, '1 = 状態報告');
+  t = t.replace(/2 = PHOTON TORPEDO DATA/g, '2 = 光子魚雷データ');
+  t = t.replace(/3 = STARBASE NAV DATA/g, '3 = 宇宙基地航法データ');
+  t = t.replace(/4 = DIRECTION\/DISTANCE CALCULATOR/g, '4 = 方向・距離計算機');
+  t = t.replace(/5 = GALAXY 'REGION NAME' MAP/g, "5 = 銀河系地域名マップ");
+  t = t.replace(/(.+) REPORTS '(.+)SENSORS SHOW NO ENEMY SHIPS\s+IN THIS QUADRANT'/g,
+    '$1「このクアドラントに敵艦はいません」');
+  t = t.replace(/FROM ENTERPRISE TO STARBASE:/g,
+    'エンタープライズから宇宙基地まで：');
+  t = t.replace(/DIRECTION\/DISTANCE CALCULATOR:/g, '方向・距離計算機：');
+  t = t.replace(/^PLEASE ENTER$/gm, '入力してください');
+  t = t.replace(/DIRECTION = ([\d.]+)/g, '方向 = $1');
+  t = t.replace(/DISTANCE = ([\d.]+)/g, '距離 = $1');
+
+  // ---- Status report ----
+  // Pad labels to 16 display cols (CJK=2, ASCII=1): 連邦の宇宙基地：=16, 残クリンゴン：=14+2sp, 任務期限：=10+6sp
+  t = t.replace(/STATUS REPORT:/g, '状態報告：');
+  t = t.replace(/KLINGONS LEFT:\s*(\d+)/g, '残クリンゴン：  $1 隻');
+  t = t.replace(/KLINGON LEFT:\s*(\d+)/g,  '残クリンゴン：  $1 隻');
+  t = t.replace(/MISSION MUST BE COMPLETED IN ([\d.]+)\s+STARDATES/g,
+    '任務期限：      $1 宇宙暦');
+  t = t.replace(/THE FEDERATION IS MAINTAINING (\d+) STARBASES? IN THE GALAXY/g,
+    '連邦の宇宙基地：$1 か所');
+  t = t.replace(/YOUR STUPIDITY HAS LEFT YOU ON YOUR ON IN/g,
+    'あなたの失策により孤立した——');
+  t = t.replace(/DAMAGE CONTROL REPORT:/g, 'ダメージ制御報告：');
+  t = t.replace(/THE GALAXY CONTAINS (\d+) STARBASES?/g,
+    '銀河系内の宇宙基地 $1 か所');
+
+  // ---- Computer: torpedo data ----
+  t = t.replace(/FROM ENTERPRISE TO KLINGON BATTLE CRUISERS/g,
+    'エンタープライズからクリンゴン戦艦各艦まで：');
+  t = t.replace(/FROM ENTERPRISE TO KLINGON BATTLE CRUISER/g,
+    'エンタープライズからクリンゴン戦艦まで：');
+  t = t.replace(/SCIENCE OFFICER (.+) REPORTS\s+'SENSORS SHOW NO ENEMY SHIPS/g,
+    '科学士官 $1「このクアドラントに敵艦はいません」');
+  // Suppress continuation lines (already merged into previous line above)
+  t = t.replace(/^\s+IN THIS QUADRANT'\s*$/gm, '');
+
+  // ---- Computer: base nav ----
+  t = t.replace(/MR\. (.+) REPORTS,\s+'SENSORS SHOW NO STARBASES IN THIS QUADRANT\.'/g,
+    '$1「このクアドラントに宇宙基地はありません」');
+
+  // ---- Computer: direction calculator ----
+  t = t.replace(/YOU ARE AT QUADRANT (\d+) , (\d+) SECTOR (\d+) , (\d+)/g,
+    '現在位置：クアドラント $1,$2　セクター $3,$4');
+
+  // ---- Computer: galaxy map ----
+  t = t.replace(/^\s+THE GALAXY\s*$/gm, '　　　　　　　銀河系マップ');
+  t = t.replace(/THE USS ENTERPRISE --- NCC-1701/g, '宇宙艦エンタープライズ NCC-1701');
+
+  // ---- End game ----
+  t = t.replace(/THE ENTERPRISE HAS BEEN DESTROYED\.\s+THEN FEDERATION WILL BE CONQUERED/g,
+    'エンタープライズ号は撃沈された。連邦は征服される。');
+  t = t.replace(/CONGRULATION, CAPTAIN!\s+THEN LAST KLINGON BATTLE CRUISER/g,
+    'おめでとう、艦長！最後のクリンゴン戦艦が');
+  t = t.replace(/YOUR EFFICIENCY RATING IS\s+([\d.]+)/g,
+    '効率評価スコア：$1');
+
+
+  t = t.replace(/COMPUTER RECORD OF GALAXY FOR QUADRANT (\d+) , (\d+)/g,
+    'クアドラント $1,$2 の銀河記録');
+
+  // ---- End game ----
+  t = t.replace(/IT IS STARDATE ([\d.]+)/g, '現在宇宙暦 $1');
+  t = t.replace(/THE END OF YOUR MISSION\./g, '任務終了。');
+  t = t.replace(/THERE WERE (\d+) KLINGON BATTLE CRUISERS LEFT AT THE END/g,
+    '残存クリンゴン戦艦 $1 隻');
+  t = t.replace(/MENACING THE FEDERATION HAS BEEN DESTROYED\./g,
+    '連邦を脅かすクリンゴン艦を全滅させた。');
+  t = t.replace(/THE ENTERPRISE HAS BEEN DESTROYED\./g,
+    'エンタープライズ号は撃沈された。');
+  t = t.replace(/YOUR STUPIDITY HAS LEFT YOU ON YOUR OWN IN/g,
+    'あなたの失策により孤立した——');
+  t = t.replace(/THE GALAXY -- YOU HAVE NO STARBASES LEFT!/g,
+    '銀河系に宇宙基地はもうない！');
+  t = t.replace(/THE FEDERATION IS IN NEED OF A NEW STARSHIP COMMANDER/g,
+    '連邦は新たな艦長を求めている');
+  t = t.replace(/FOR A SIMILAR MISSION -- IF THERE IS A VOLUNTEER,/g,
+    '同様の任務のために——志願者がいれば、');
+  t = t.replace(/THE ENTERPRISE WILL ATTEMPT A FINAL MISSION/g,
+    'エンタープライズは最終任務に挑む。');
+
+  // ---- System names in output ----
+  for (const [en, ja] of Object.entries(SYSTEM_NAME_MAP)) {
+    t = t.replace(new RegExp(en, 'g'), ja);
+  }
+  // Damage control row: "SYSTEM NAME               -1.2" → "name：pad 損傷 -1.2" or "name：pad 正常"
+  // Pad labels to 12 display cols (CJK=2, ASCII=1): フェーザー：=12, 修理装置：/シールド：=10+2, ワープ：/魚雷管：=8+4, SRS:/LRS:/COM:=5+7
+  const _DCPad = { 'ワープ':'    ', 'SRS':'       ', 'LRS':'       ',
+                   'フェーザー':'', '魚雷管':'    ', '修理装置':'  ',
+                   'シールド':'  ', 'COM':'       ' };
+  t = t.replace(/^([A-Za-z\u3040-\u30ff\u4e00-\u9fff][^\n]{5,}?)\s{2,}([-\d.]+)\s*$/gm, (_, name, val) => {
+    const n = name.trim();
+    if (!n) return _;
+    const v = parseFloat(val);
+    if (isNaN(v)) return _;
+    const pad = _DCPad[n] !== undefined ? _DCPad[n] : ' ';
+    return v < 0 ? `${n}：${pad}損傷 ${v.toFixed(2)}` : `${n}：${pad}正常`;
+  });
+
+  return t;
+}
+
+// ---- Message log ----
+const messageLog = document.getElementById('message-log');
+let lastPrompt = 'COMMAND';
+
+// ---- FX animation system ----
+let _torpedoTrack     = null;  // null=idle, []=collecting
+let _torpedoAnimating = false; // true while torpedo animation is in progress
+let _phaserHits       = [];
+let _phaserTimer  = null;
+
+function getCellCenter(y, x) {
+  const cell = document.getElementById(`sc-${y}-${x}`);
+  if (!cell) return null;
+  const r = cell.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+}
+
+function _fxCanvas() {
+  const c = document.getElementById('fx-canvas');
+  if (c.width !== window.innerWidth || c.height !== window.innerHeight) {
+    c.width  = window.innerWidth;
+    c.height = window.innerHeight;
+  }
+  c.style.display = 'block';
+  return c;
+}
+
+async function animateTorpedo(track) {
+  if (track.length === 0) return;
+  _torpedoAnimating = true;
+  const canvas = _fxCanvas();
+  const ctx = canvas.getContext('2d');
+  const TRAIL = 5;
+  const EXPL_STEPS = 9;
+  const EXPL_MS    = 55;                                       // 9×55 = 495ms
+  const trackDelay = Math.floor(1505 / Math.max(track.length, 1)); // remaining ~1500ms
+  const trail = [];
+  for (const [y, x] of track) {
+    const pos = getCellCenter(y, x);
+    if (!pos) continue;
+    trail.push(pos);
+    if (trail.length > TRAIL) trail.shift();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    trail.forEach((p, i) => {
+      const a = (i + 1) / trail.length;
+      ctx.fillStyle = `rgba(255,230,80,${a * 0.9})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, (i + 1) / trail.length * 7, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    await new Promise(r => setTimeout(r, trackDelay));
+  }
+  // Explosion ring
+  const last = trail[trail.length - 1];
+  if (last) {
+    for (let step = 0; step < EXPL_STEPS; step++) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const rad = step * 6 + 4;
+      const a   = 1 - step / EXPL_STEPS;
+      ctx.strokeStyle = `rgba(255,120,20,${a})`;
+      ctx.lineWidth   = 4;
+      ctx.beginPath();
+      ctx.arc(last.x, last.y, rad, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = `rgba(255,230,80,${a * 0.45})`;
+      ctx.beginPath();
+      ctx.arc(last.x, last.y, rad * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+      await new Promise(r => setTimeout(r, EXPL_MS));
+    }
+  }
+  canvas.style.display = 'none';
+  _torpedoAnimating = false;
+  updateDisplay(); // apply any deferred sector changes (e.g. destroyed Klingon)
+}
+
+async function animatePhaser(hits) {
+  if (hits.length === 0) return;
+  const gs = getGameState();
+  const heroPos = getCellCenter(
+    Math.round(gs.sectorPositionY), Math.round(gs.sectorPositionX)
+  );
+  if (!heroPos) return;
+  const canvas = _fxCanvas();
+  const ctx = canvas.getContext('2d');
+
+  const STEPS = 28;
+  const MAX_R = Math.max(canvas.width, canvas.height) * 0.55;
+
+  for (let step = 0; step < STEPS; step++) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const t  = step / (STEPS - 1);          // 0→1
+    const r  = t * MAX_R;
+    const a  = Math.pow(1 - t, 1.2);        // fade out as it expands
+
+    // Outer shockwave ring
+    ctx.save();
+    ctx.strokeStyle = `rgba(80,215,255,${a * 0.85})`;
+    ctx.lineWidth   = 4 * (1 - t * 0.6);
+    ctx.shadowColor = 'rgba(80,215,255,1)';
+    ctx.shadowBlur  = 18 * (1 - t);
+    ctx.beginPath();
+    ctx.arc(heroPos.x, heroPos.y, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    // Inner fill glow (fades faster)
+    if (t < 0.4) {
+      const ia = (1 - t / 0.4) * 0.35;
+      ctx.save();
+      ctx.fillStyle = `rgba(80,215,255,${ia})`;
+      ctx.beginPath();
+      ctx.arc(heroPos.x, heroPos.y, r * 0.9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Hit flash on enemies when wave reaches them
+    for (const { y, x, dmg, miss } of hits) {
+      const tgt = getCellCenter(y, x);
+      if (!tgt) continue;
+      const dist = Math.hypot(tgt.x - heroPos.x, tgt.y - heroPos.y);
+      const arrive = dist / MAX_R;
+      const dt = t - arrive;
+      if (dt >= 0 && dt < 0.22) {
+        const fa = (1 - dt / 0.22);
+        ctx.save();
+        ctx.fillStyle = miss
+          ? `rgba(100,160,255,${fa * 0.5})`
+          : `rgba(255,140,40,${fa * 0.9})`;
+        ctx.shadowColor = miss ? 'rgba(100,160,255,0.8)' : 'rgba(255,200,60,1)';
+        ctx.shadowBlur  = 20 * fa;
+        ctx.beginPath();
+        ctx.arc(tgt.x, tgt.y, 14 * fa + 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        if (!miss) {
+          ctx.fillStyle = `rgba(255,240,100,${fa})`;
+          ctx.font = 'bold 12px monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(`-${dmg}`, tgt.x, tgt.y - 16);
+        }
+      }
+    }
+
+    await new Promise(r => setTimeout(r, 71)); // 28×71 ≈ 2000ms
+  }
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  canvas.style.display = 'none';
+}
+
+function checkFxTriggers(rawText) {
+  const upper = rawText.toUpperCase();
+  // --- Torpedo trajectory ---
+  if (upper.includes('TORPEDO TRACK')) {
+    _torpedoTrack = [];
+    return;
+  }
+  if (_torpedoTrack !== null) {
+    const m = rawText.match(/^\s*(\d+)\s*,\s*(\d+)\s*$/);
+    if (m) {
+      _torpedoTrack.push([parseInt(m[1]), parseInt(m[2])]);
+      return;
+    }
+    // Non-coordinate line → end of track, trigger animation
+    const track = _torpedoTrack;
+    _torpedoTrack = null;
+    if (track.length > 0) animateTorpedo(track);
+  }
+  // --- Phaser hits ---
+  // Trigger directly from hit/miss lines (not from "PHASERS LOCKED ON TARGET"
+  // which fires before user input, causing the timer to expire with 0 hits).
+  const mHit  = rawText.match(/(\d+) UNIT HIT ON .+? AT SECTOR\s+(\d+)\s*,\s*(\d+)/);
+  const mMiss = rawText.match(/SENSORS SHOW NO DAMAGE TO ENEMY AT\s+(\d+)\s*,\s*(\d+)/);
+  if (mHit || mMiss) {
+    if (mHit)  _phaserHits.push({ y: parseInt(mHit[2]),  x: parseInt(mHit[3]),  dmg: parseInt(mHit[1]), miss: false });
+    if (mMiss) _phaserHits.push({ y: parseInt(mMiss[1]), x: parseInt(mMiss[2]), dmg: 0, miss: true });
+    if (_phaserTimer) clearTimeout(_phaserTimer);
+    _phaserTimer = setTimeout(() => {
+      _phaserTimer = null;
+      const hits = _phaserHits;
+      _phaserHits = [];
+      if (hits.length > 0) animatePhaser(hits);
+    }, 50); // collect all simultaneous hits before firing
+  }
+}
+
+function addToLog(...messages) {
+  const rawText = messages.join('');
+  if (!rawText && rawText !== '') return;
+  checkFxTriggers(rawText);
+  const text = translateText(rawText);
+
+  // LRS output is shown on galaxy map — suppress from log
+  const upper = rawText.toUpperCase();
+  if (upper.includes('LONG RANGE SCAN FOR QUADRANT') ||
+      /^\s*[:\|]\s*\d{3}\s*[:\|]/.test(rawText) ||
+      /^[-\s]*\+[-\s]*\+[-\s]*$/.test(rawText.trim())) {
+    return;
+  }
+
+  // Suppress continuation lines that were merged into the previous translated line
+  if (rawText.trim() && !text.trim()) return;
+
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  // Use specific phrases to avoid coloring narrative text mid-sentence
+  if (upper.includes('HIT BY') || upper.includes('SHIELDS DOWN') ||
+      upper.includes('ENTERPRISE DESTROYED') || upper.includes('FATAL ERROR') ||
+      upper.includes('KLINGON ATTACKS') || upper.includes('KLINGON FIRES') ||
+      upper.includes('COMBAT AREA') || upper.includes('KLINGON BATTLE CRUISER') ||
+      upper.includes('DEAD IN SPACE')) {
+    line.className += ' alert';
+  } else if (upper.includes('DAMAGE CONTROL') || upper.includes('STATE OF REPAIR') ||
+             upper.includes('REPAIRED') || upper.includes(' DAMAGED')) {
+    line.className += ' system';
+  } else if (upper.includes('YOUR ORDERS') || upper.includes('NOW ENTERING') ||
+             upper.includes('MISSION BEGINS') || upper.includes('MISSION COMPLETE') ||
+             text.includes('クリックしてください') || text.includes('Click the')) {
+    line.className += ' info';
+  }
+  line.textContent = text;
+  messageLog.appendChild(line);
+  requestAnimationFrame(() => { messageLog.scrollTop = messageLog.scrollHeight; });
+  updateDisplay();
+}
+
+
+// ---- Widget system ----
+let inputResolve = null;
+let isWaitingForInput = false;
+let pendingSRS = false; // true only after DAM repair, until SRS auto/manually runs
+let pendingLRS = false; // same for LRS
+let autoRunLRS = true;  // auto-submit LRS on first/post-NAV COMMAND prompt
+let autoRunSRS = false; // auto-submit SRS after PHA or TOR
+
+function updateSrsButton() {
+  const btn = document.querySelector('[data-cmd="SRS"]');
+  if (!btn) return;
+  const L = LANG_UI[currentLang] || LANG_UI.ja;
+  btn.disabled = !pendingSRS;
+  btn.style.opacity = pendingSRS ? '1' : '0.4';
+  btn.title = pendingSRS ? L.srsRepaired : L.srsAuto;
+}
+function updateLrsButton() {
+  const btn = document.querySelector('[data-cmd="LRS"]');
+  if (!btn) return;
+  const L = LANG_UI[currentLang] || LANG_UI.ja;
+  btn.disabled = !pendingLRS;
+  btn.style.opacity = pendingLRS ? '1' : '0.4';
+  btn.title = pendingLRS ? L.lrsRepaired : L.lrsAuto;
+}
+
+// Show one widget, hide all others (use inline style for guaranteed hiding)
+function showWidget(id) {
+  document.querySelectorAll('.widget').forEach(w => {
+    w.classList.remove('active');
+    w.style.display = 'none';
+  });
+  if (id === 'widget-nav') {
+    showNavOverlay();
+    return;
+  }
+  navHide();
+  const w = document.getElementById(id);
+  if (w) {
+    w.classList.add('active');
+    w.style.display = 'flex';
+  }
+}
+
+// Determine which widget to show for a given prompt
+function widgetForPrompt(prompt) {
+  const p = prompt.trim().toUpperCase();
+  if (p.startsWith('COURSE') || p.includes('TORPEDO COURSE')) return 'widget-nav';
+  if (p.startsWith('WARP FACTOR'))                               return 'widget-warp';
+  if (p.startsWith('NUMBER OF UNITS TO FIRE'))                   return 'widget-energy';
+  if (p.startsWith('NUMBER OF UNITS TO SHIELDS'))                return 'widget-energy';
+  if (p.startsWith('COMPUTER OPTION') || p.startsWith('COMPUTER ACTIVE')) return 'widget-computer';
+  if (p.includes('COORDINATES'))                                 return 'sector-click';
+  if (p.includes('AUTHORIZE') || p.includes('(Y/N)'))           return 'widget-yesno';
+  return 'widget-text';
+}
+
+function promptUser(prompt) {
+  lastPrompt = prompt;
+  const p = prompt.trim().toUpperCase();
+  const isCommand = (p === 'COMMAND');
+
+  // Auto-run SRS transparently on COMMAND prompt after PHA/TOR
+  if (isCommand && autoRunSRS) {
+    autoRunSRS = false;
+    isWaitingForInput = true;
+    return new Promise(resolve => {
+      inputResolve = resolve;
+      requestAnimationFrame(() => {
+        const r = inputResolve;
+        isWaitingForInput = false;
+        inputResolve = null;
+        r('SRS');
+      });
+    });
+  }
+
+  // Auto-run LRS transparently on COMMAND prompt when flagged
+  if (isCommand && autoRunLRS) {
+    autoRunLRS = false;
+    isWaitingForInput = true;
+    return new Promise(resolve => {
+      inputResolve = resolve;
+      requestAnimationFrame(() => {
+        const r = inputResolve;
+        isWaitingForInput = false;
+        inputResolve = null;
+        r('LRS');
+      });
+    });
+  }
+
+  const cmdButtons = document.getElementById('command-buttons');
+  const widgetArea = document.getElementById('widget-area');
+
+  // Toggle command buttons vs sub-command widget area
+  if (isCommand) {
+    cmdButtons.style.display = 'grid';
+    widgetArea.style.display = 'none';
+    document.querySelectorAll('.widget').forEach(w => { w.classList.remove('active'); w.style.display = 'none'; });
+    navHide();
+    sectorClickDeactivate();
+    document.querySelectorAll('.sc-from, .sc-to').forEach(c => c.classList.remove('sc-from', 'sc-to'));
+    document.querySelectorAll('.cmd-btn').forEach(btn => { btn.disabled = false; });
+  } else {
+    cmdButtons.style.display = 'none';
+    document.querySelectorAll('.cmd-btn').forEach(btn => { btn.disabled = true; });
+
+    // Sliders: update max values based on current state
+    const gs = getGameState();
+    if (p.startsWith('NUMBER OF UNITS TO FIRE')) {
+      const maxE = Math.max(0, Math.floor((gs.energyRemaining || 0)));
+      document.getElementById('energy-slider').max = maxE;
+      document.getElementById('energy-slider').value = Math.min(500, maxE);
+      document.getElementById('energy-unit').textContent = '発射量';
+      document.getElementById('energy-val').textContent = document.getElementById('energy-slider').value;
+    } else if (p.startsWith('NUMBER OF UNITS TO SHIELDS')) {
+      const maxE = Math.max(0, Math.floor((gs.energyRemaining || 0) + (gs.shieldsCurrent || 0)));
+      document.getElementById('energy-slider').max = maxE;
+      document.getElementById('energy-slider').value = Math.floor(gs.shieldsCurrent || 0);
+      document.getElementById('energy-unit').textContent = 'シールド';
+      document.getElementById('energy-val').textContent = document.getElementById('energy-slider').value;
+    } else if (p.startsWith('WARP FACTOR')) {
+      const maxWarp = (gs.systemsDamage && gs.systemsDamage['WARP ENGINES'] < 0) ? 0.2 : 8;
+      document.getElementById('warp-slider').max = maxWarp;
+      document.getElementById('warp-slider').value = Math.min(1, maxWarp);
+      document.getElementById('warp-val').textContent = parseFloat(document.getElementById('warp-slider').value).toFixed(1);
+    }
+
+    // Show the right widget
+    const wid = widgetForPrompt(prompt);
+    if (wid === 'widget-yesno') {
+      const desc = document.getElementById('yesno-description');
+      if (desc) desc.textContent = translatePrompt(prompt);
+    }
+    // nav circle is full-screen canvas — no widget-area needed
+    // sector-click: activate cell-click mode on sector map
+    if (wid === 'sector-click') {
+      const isFrom = prompt.toUpperCase().includes('INITIAL');
+      sectorClickActivate(isFrom);
+      widgetArea.style.display = 'none';
+    } else {
+      widgetArea.style.display = (wid === 'widget-nav') ? 'none' : 'flex';
+      showWidget(wid);
+    }
+  }
+
+  isWaitingForInput = true;
+  return new Promise(resolve => { inputResolve = resolve; });
+}
+
+// ---- Sector click-select mode (for Direction/Distance Calculator) ----
+let _sectorClickActive = false;
+let _sectorClickIsFrom = true;
+
+function sectorClickActivate(isFrom) {
+  _sectorClickActive = true;
+  _sectorClickIsFrom = isFrom;
+  const L = LANG_UI[currentLang] || LANG_UI.ja;
+  const msg = isFrom ? L.clickFrom : L.clickTo;
+  const banner = document.getElementById('sector-click-banner');
+  if (banner) { banner.textContent = '▶ ' + msg; banner.style.display = 'block'; }
+  addToLog(msg);
+  const grid = document.getElementById('sector-grid');
+  if (grid) grid.classList.add('select-mode');
+  document.getElementById('sector-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function sectorClickDeactivate() {
+  _sectorClickActive = false;
+  const banner = document.getElementById('sector-click-banner');
+  if (banner) banner.style.display = 'none';
+  const grid = document.getElementById('sector-grid');
+  if (grid) grid.classList.remove('select-mode');
+}
+
+// Sector grid click handler for select mode
+document.addEventListener('DOMContentLoaded', () => {
+  const grid = document.getElementById('sector-grid');
+  if (!grid) return;
+  grid.addEventListener('click', (e) => {
+    if (!_sectorClickActive) return;
+    const cell = e.target.closest('.sector-cell');
+    if (!cell) return;
+    const parts = cell.id.split('-'); // sc-Y-X
+    const y = parts[1], x = parts[2];
+    // Highlight the selected cell
+    document.querySelectorAll('.sc-from, .sc-to').forEach(c => {
+      if (_sectorClickIsFrom) c.classList.remove('sc-from');
+      else c.classList.remove('sc-to');
+    });
+    cell.classList.add(_sectorClickIsFrom ? 'sc-from' : 'sc-to');
+    sectorClickDeactivate();
+    submitInput(`${y},${x}`);
+  });
+});
+
+// ---- Navigation overlay (sector map circle) ----
+const NAV_CELL = 32; // 30px cell + 2px gap
+let _navCanvas = null;
+let _navCtx = null;
+
+function navGetShipCenter() {
+  const gs = getGameState();
+  const sY = Math.floor(gs.sectorPositionY);
+  const sX = Math.floor(gs.sectorPositionX);
+  const cell = document.getElementById(`sc-${sY}-${sX}`);
+  if (cell) {
+    const cr = cell.getBoundingClientRect();
+    return { cx: cr.left + cr.width / 2, cy: cr.top + cr.height / 2 };
+  }
+  return { cx: window.innerWidth / 2, cy: window.innerHeight / 2 };
+}
+
+// Convert screen delta (dx, dy) → float course [1, 9)
+// COURSE_TO_XY: course1=East, going CCW: E→NE→N→NW→W→SW→S→SE
+function navAngleToCourse(dx, dy) {
+  const angle = Math.atan2(dy, dx); // 0=right, CW positive in screen
+  const raw = -angle / (Math.PI / 4); // each course step = 45° CCW
+  const mod8 = ((raw % 8) + 8) % 8;
+  return 1 + mod8; // [1, 9)
+}
+
+function navDraw(mousePos) {
+  const canvas = _navCanvas;
+  const ctx = _navCtx;
+  if (!canvas || !ctx) return;
+  const { cx, cy } = navGetShipCenter();
+  const sectorGrid = document.getElementById('sector-grid');
+  const sgRect = sectorGrid ? sectorGrid.getBoundingClientRect() : null;
+  const R = sgRect ? sgRect.width / 2 : Math.min(canvas.width, canvas.height) * 0.42;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Dim overlay
+  ctx.fillStyle = 'rgba(0,0,18,0.72)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Dashed orbit circle
+  ctx.save();
+  ctx.strokeStyle = 'rgba(0,200,255,0.7)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 4]);
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // 8 course markers
+  for (let c = 1; c <= 8; c++) {
+    const a = -(c - 1) * Math.PI / 4; // CCW from East
+    const mx = cx + Math.cos(a) * R;
+    const my = cy + Math.sin(a) * R;
+    ctx.fillStyle = 'rgba(0,200,255,0.9)';
+    ctx.beginPath();
+    ctx.arc(mx, my, 4, 0, Math.PI * 2);
+    ctx.fill();
+    // Course number label outside circle
+    const lx = cx + Math.cos(a) * (R + 15);
+    const ly = cy + Math.sin(a) * (R + 15);
+    ctx.fillStyle = '#00efff';
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(c), lx, ly);
+  }
+
+  // Arrow + course readout when mouse is present
+  if (mousePos) {
+    const dx = mousePos.x - cx;
+    const dy = mousePos.y - cy;
+    const dist = Math.hypot(dx, dy);
+    if (dist > 6) {
+      const course = navAngleToCourse(dx, dy);
+      const ndx = dx / dist;
+      const ndy = dy / dist;
+      const arrowLen = Math.min(dist, R - 4);
+
+      // Arrow shaft
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,215,0,0.95)';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + ndx * arrowLen, cy + ndy * arrowLen);
+      ctx.stroke();
+      ctx.restore();
+
+      // Arrowhead
+      const ha = Math.atan2(ndy, ndx);
+      const hl = 9;
+      ctx.fillStyle = 'rgba(255,215,0,0.95)';
+      ctx.beginPath();
+      ctx.moveTo(cx + ndx * arrowLen, cy + ndy * arrowLen);
+      ctx.lineTo(cx + ndx * arrowLen - hl * Math.cos(ha - 0.38), cy + ndy * arrowLen - hl * Math.sin(ha - 0.38));
+      ctx.lineTo(cx + ndx * arrowLen - hl * Math.cos(ha + 0.38), cy + ndy * arrowLen - hl * Math.sin(ha + 0.38));
+      ctx.closePath();
+      ctx.fill();
+
+      // Course value badge
+      const badgeW = 88, badgeH = 20;
+      const bx = cx - badgeW / 2;
+      const by = cy - R - badgeH - 6;
+      ctx.fillStyle = 'rgba(0,0,18,0.85)';
+      ctx.strokeStyle = 'rgba(255,215,0,0.7)';
+      ctx.lineWidth = 1;
+      ctx.fillRect(bx, by, badgeW, badgeH);
+      ctx.strokeRect(bx, by, badgeW, badgeH);
+      ctx.fillStyle = 'rgba(255,215,0,1)';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`コース ${course.toFixed(1)}`, cx, by + badgeH / 2);
+    }
+  }
+
+  // Ship dot
+  ctx.fillStyle = 'rgba(255,215,0,0.95)';
+  ctx.beginPath();
+  ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function _navMouseMove(e) {
+  navDraw({ x: e.clientX, y: e.clientY });
+}
+function _navClick(e) {
+  const { cx, cy } = navGetShipCenter();
+  const sectorGrid = document.getElementById('sector-grid');
+  const sgRect = sectorGrid ? sectorGrid.getBoundingClientRect() : null;
+  const R = sgRect ? sgRect.width / 2 : Math.min(window.innerWidth, window.innerHeight) * 0.42;
+  const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+  if (dist < 6) return; // too close to center
+  if (dist > R) { navHide(); submitInput(''); return; } // outside circle = cancel
+  const course = navAngleToCourse(e.clientX - cx, e.clientY - cy);
+  navHide();
+  submitInput(course.toFixed(1));
+}
+
+function _navKeydown(e) {
+  if (e.key === 'Escape') { navHide(); submitInput(''); }
+}
+
+function showNavOverlay() {
+  const canvas = document.getElementById('nav-canvas');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  canvas.style.display = 'block';
+  _navCanvas = canvas;
+  _navCtx = canvas.getContext('2d');
+  navDraw(null);
+  canvas.addEventListener('mousemove', _navMouseMove);
+  canvas.addEventListener('click',     _navClick);
+  document.addEventListener('keydown', _navKeydown);
+  // Position cancel button above the course badge area
+  const { cx, cy } = navGetShipCenter();
+  const sectorGrid = document.getElementById('sector-grid');
+  const sgRect = sectorGrid ? sectorGrid.getBoundingClientRect() : null;
+  const R = sgRect ? sgRect.width / 2 : Math.min(window.innerWidth, window.innerHeight) * 0.42;
+  const btn = document.getElementById('nav-cancel-btn');
+  if (btn) {
+    btn.style.left = cx + 'px';           // transform: translateX(-50%) centers it
+    btn.style.top  = (cy + R + 10) + 'px'; // below circle
+    btn.style.display = 'block';
+  }
+}
+
+function navHide() {
+  const canvas = document.getElementById('nav-canvas');
+  if (!canvas) return;
+  canvas.style.display = 'none';
+  canvas.removeEventListener('mousemove', _navMouseMove);
+  canvas.removeEventListener('click',     _navClick);
+  document.removeEventListener('keydown', _navKeydown);
+  _navCanvas = null;
+  _navCtx = null;
+  const btn = document.getElementById('nav-cancel-btn');
+  if (btn) btn.style.display = 'none';
+}
+
+function submitInput(value) {
+  if (!isWaitingForInput || !inputResolve) {
+    // Game not waiting — may have crashed; restart game
+    if (!isWaitingForInput) {
+      addToLog('ゲームを再起動します...');
+      setTimeout(() => window.location.reload(), 800);
+    }
+    return;
+  }
+  navHide();
+  const val = String(value || '').trim();
+
+  // Track pendingSRS / pendingLRS / autoRunLRS flags
+  const lp = lastPrompt.trim().toUpperCase();
+  if (lp.includes('AUTHORIZE') && val.toUpperCase() === 'Y') {
+    pendingSRS = true;   // DAM repair authorized → SRS needed
+    pendingLRS = true;   // and LRS needed
+  } else if (lp === 'COMMAND') {
+    if (val.toUpperCase() === 'NAV') { pendingSRS = false; pendingLRS = false; autoRunLRS = true; }
+    if (val.toUpperCase() === 'SRS') { pendingSRS = false; autoRunSRS = false; }
+    if (val.toUpperCase() === 'LRS') { pendingLRS = false; autoRunLRS = false; }
+    if (val.toUpperCase() === 'PHA' || val.toUpperCase() === 'TOR') autoRunSRS = true;
+  }
+  updateSrsButton();
+  updateLrsButton();
+
+  // Echo to log
+  const line = document.createElement('div');
+  line.className = 'log-line prompt';
+  line.textContent = `> ${translatePrompt(lastPrompt)}？ ${val}`;
+  messageLog.appendChild(line);
+  requestAnimationFrame(() => { messageLog.scrollTop = messageLog.scrollHeight; });
+  // Reset
+  isWaitingForInput = false;
+  const resolve = inputResolve;
+  inputResolve = null;
+  resolve(val);
+}
+
+// ---- Wire up all widgets ----
+
+
+// Command buttons
+document.querySelectorAll('.cmd-btn').forEach(btn => {
+  btn.addEventListener('click', () => { if (!btn.disabled) submitInput(btn.dataset.cmd); });
+});
+
+// Warp slider
+const warpSlider = document.getElementById('warp-slider');
+const warpVal    = document.getElementById('warp-val');
+warpSlider.addEventListener('input', () => { warpVal.textContent = parseFloat(warpSlider.value).toFixed(1); });
+document.getElementById('warp-ok').addEventListener('click', () => submitInput(warpSlider.value));
+
+// Energy slider
+const energySlider = document.getElementById('energy-slider');
+const energyVal    = document.getElementById('energy-val');
+energySlider.addEventListener('input', () => { energyVal.textContent = energySlider.value; });
+document.getElementById('energy-ok').addEventListener('click', () => submitInput(energySlider.value));
+document.getElementById('energy-all').addEventListener('click', () => {
+  energySlider.value = energySlider.max;
+  energyVal.textContent = energySlider.max;
+});
+document.getElementById('energy-half').addEventListener('click', () => {
+  const h = Math.floor(energySlider.max / 2);
+  energySlider.value = h; energyVal.textContent = h;
+});
+document.getElementById('energy-zero').addEventListener('click', () => {
+  energySlider.value = 0; energyVal.textContent = 0;
+});
+
+// Computer options
+document.querySelectorAll('.comp-opt-btn').forEach(btn => {
+  btn.addEventListener('click', () => submitInput(btn.dataset.val));
+});
+
+// Coordinates
+document.getElementById('coords-ok').addEventListener('click', () => {
+  const y = document.getElementById('coord-y').value;
+  const x = document.getElementById('coord-x').value;
+  submitInput(`${y},${x}`);
+});
+
+document.getElementById('yesno-yes').addEventListener('click', () => submitInput('Y'));
+document.getElementById('yesno-no').addEventListener('click',  () => submitInput('N'));
+
+// Cancel helper: submit value that causes current command to abort
+function cancelValue(prompt) {
+  const p = prompt.trim().toUpperCase();
+  if (p.startsWith('NUMBER OF UNITS TO SHIELDS')) return '-1';
+  if (p.startsWith('NUMBER OF UNITS'))            return '0';
+  if (p.startsWith('COMPUTER'))                   return '-1';
+  return ''; // NaN for course/warp/coords → abort on invalid
+}
+document.getElementById('warp-cancel').addEventListener('click',     () => submitInput(cancelValue(lastPrompt)));
+document.getElementById('energy-cancel').addEventListener('click',   () => submitInput(cancelValue(lastPrompt)));
+document.getElementById('computer-cancel').addEventListener('click', () => submitInput(cancelValue(lastPrompt)));
+document.getElementById('coords-cancel').addEventListener('click',   () => submitInput(cancelValue(lastPrompt)));
+
+// Exit handler
+async function handleExit() {
+  addToLog('');
+  addToLog((LANG_UI[currentLang] || LANG_UI.ja).gameOver);
+  updateDisplay();
+  await promptUser('PRESS ENTER TO RESTART');
+  window.location.reload();
+}
+
+// Patch systems table to show translated names
+(function patchSystemsTable() {
+  const observer = new MutationObserver(() => {
+    document.querySelectorAll('#systems-table .sys-name').forEach(td => {
+      if (!td.getAttribute('data-en')) {
+        td.setAttribute('data-en', td.textContent);
+        td.textContent = translateSysName(td.textContent);
+      }
+    });
+  });
+  const table = document.getElementById('systems-table');
+  if (table) observer.observe(table, { childList: true, subtree: true });
+})();
+
+// ---- Start game ----
+onPrint(addToLog);
+onInput(promptUser);
+onExit(handleExit);
+
+updateSrsButton();
+updateLrsButton();
+applyLang();
+// Error recovery: show command buttons so user can attempt to resume
+function showErrorRecovery(err) {
+  const msg = String(err && err.message ? err.message : err);
+  addToLog('');
+  addToLog('⚠ ' + msg);
+  addToLog('コマンドボタンから操作を再開してください');
+  // Reset input state
+  isWaitingForInput = false;
+  inputResolve = null;
+  navHide();
+  // Show command buttons
+  const cmdButtons = document.getElementById('command-buttons');
+  const widgetArea = document.getElementById('widget-area');
+  if (cmdButtons) cmdButtons.style.display = 'grid';
+  if (widgetArea) widgetArea.style.display = 'none';
+  document.querySelectorAll('.widget').forEach(w => { w.classList.remove('active'); w.style.display = 'none'; });
+  document.querySelectorAll('.cmd-btn').forEach(btn => { btn.disabled = false; });
+  console.error(err);
+}
+
+gameMain().catch(err => showErrorRecovery(err));
+
+</script>
+</body>
+</html>
