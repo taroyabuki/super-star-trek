@@ -32,11 +32,11 @@
 
 | コマンド | 説明 |
 |----------|------|
-| **NAV** | ワープ航法．コース(1〜9)とワープ係数を指定して移動する |
+| **NAV** | ワープ航法．円が表示されるのでクリックしてコースを指定し，ワープ係数を入力して移動する |
 | **SRS** | 近距離センサースキャン．現在のセクター内の状況を表示 |
 | **LRS** | 長距離センサースキャン．隣接クアドラントの概要を表示 |
 | **PHA** | フェーザー砲発射．投入エネルギー量を指定する |
-| **TOR** | 光子魚雷発射．コース(1〜9)を指定する（残数に注意）|
+| **TOR** | 光子魚雷発射．円が表示されるのでクリックしてコースを指定する（残数に注意）|
 | **SHE** | シールドにエネルギーを転送する |
 | **DAM** | ダメージコントロールレポートを表示 |
 | **COM** | 艦載コンピュータ（銀河マップ，ナビ計算など） |
@@ -44,17 +44,11 @@
 
 ### コース指定
 
-```
-8  1  2
- ↖ ↑ ↗
-7 ←  → 3
- ↙ ↓ ↘
-6  5  4
-```
+NAV・TORでは円が表示されます．円上をクリックして方向（コース）を指定してください．NAVはその後ワープ係数の入力が必要です．
 
 ### 操作のヒント
 
-- **セクターマップのセルをクリック**すると，ナビゲーションや魚雷のターゲットを視覚的に選択できます
+- NAV・TORでは円が表示されます．円上をクリックしてコースを指定してください
 - 宇宙基地に隣接してドッキングするとエネルギー・魚雷・修理が全回復します
 - クリンゴンはターン毎に攻撃してきます．シールドを忘れずに
 
@@ -109,29 +103,22 @@ Destroy all **Klingon ships** spread across the galaxy (8×8 quadrants) before t
 
 | Command | Description |
 |---------|-------------|
-| **NAV** | Warp navigation. Set course (1–9) and warp factor |
+| **NAV** | Warp navigation. A circle appears — click to set course, then enter warp factor |
 | **SRS** | Short-range sensor scan — shows current sector |
 | **LRS** | Long-range sensor scan — shows adjacent quadrants |
 | **PHA** | Fire phasers. Enter energy units to fire |
-| **TOR** | Fire photon torpedo. Set course (1–9); limited supply |
+| **TOR** | Fire photon torpedo. A circle appears — click to set course; limited supply |
 | **SHE** | Transfer energy to shields |
 | **DAM** | Damage control report |
 | **COM** | Ship's computer (galaxy map, navigation calculator, etc.) |
 | **XXX** | Resign / end game |
 
-#### Course Reference
+#### Course Selection
 
-```
-8  1  2
- ↖ ↑ ↗
-7 ←  → 3
- ↙ ↓ ↘
-6  5  4
-```
+For NAV and TOR, a circle appears on screen. Click anywhere on the circle to set your course direction. NAV then prompts for a warp factor.
 
 #### Tips
 
-- **Click a cell on the sector map** to visually select navigation targets or torpedo courses
 - Dock at a starbase (move adjacent to one) to fully replenish energy, torpedoes, and repairs
 - Klingons fire back every turn — keep your shields up!
 
